@@ -36,6 +36,12 @@ export function useUsdtDeposit(
     chainId !== undefined && bscChainIds.includes(chainId);
 
   const [confirmHash, setConfirmHash] = useState<`0x${string}` | undefined>();
+  const [pendingKind, setPendingKind] = useState<"approve" | "deposit" | null>(
+    null,
+  );
+  const [lastDepositTxHash, setLastDepositTxHash] = useState<
+    `0x${string}` | null
+  >(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const readsEnabled = Boolean(
@@ -171,11 +177,21 @@ export function useUsdtDeposit(
 
   useEffect(() => {
     if (isConfirmed && confirmHash) {
+      if (pendingKind === "deposit") {
+        setLastDepositTxHash(confirmHash);
+      }
       void refetchAllowance();
       void refetchBalance();
       setConfirmHash(undefined);
+      setPendingKind(null);
     }
-  }, [isConfirmed, confirmHash, refetchAllowance, refetchBalance]);
+  }, [
+    isConfirmed,
+    confirmHash,
+    pendingKind,
+    refetchAllowance,
+    refetchBalance,
+  ]);
 
   const isBusy = isWritePending || isConfirming;
 
@@ -195,6 +211,7 @@ export function useUsdtDeposit(
     }
     try {
       const hash = await writeContractAsync(approveSimulation.request);
+      setPendingKind("approve");
       setConfirmHash(hash);
     } catch (e) {
       setLocalError(shortError(e));
@@ -211,11 +228,17 @@ export function useUsdtDeposit(
     }
     try {
       const hash = await writeContractAsync(depositSimulation.request);
+      setLastDepositTxHash(null);
+      setPendingKind("deposit");
       setConfirmHash(hash);
     } catch (e) {
       setLocalError(shortError(e));
     }
   }, [depositSimulation?.request, writeContractAsync]);
+
+  const resetLastDepositTxHash = useCallback(() => {
+    setLastDepositTxHash(null);
+  }, []);
 
   const combinedError =
     localError ??
@@ -261,5 +284,7 @@ export function useUsdtDeposit(
     isReadsLoading: isAllowanceFetching || isBalanceFetching,
     handleApprove,
     handleDeposit,
+    lastDepositTxHash,
+    resetLastDepositTxHash,
   };
 }

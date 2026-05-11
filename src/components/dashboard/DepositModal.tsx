@@ -7,6 +7,8 @@ import { useSwitchChain } from "wagmi";
 import { bsc } from "wagmi/chains";
 import { HudButton } from "@/components/hud/HudButton";
 import { useUsdtDeposit } from "@/hooks/useUsdtDeposit";
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
 import type { PackageTier } from "@/lib/types/dashboard";
 
 type Props = {
@@ -61,10 +63,16 @@ export function DepositModal({
 }: Props) {
   const d = useUsdtDeposit(depositAddress, selectedPackage);
   const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const { token } = useAuth();
 
   const [mounted, setMounted] = useState(false);
   const [lastAction, setLastAction] = useState<ActionKind>(null);
   const [success, setSuccess] = useState(false);
+  const [verifyState, setVerifyState] = useState<
+    "idle" | "pending" | "done" | "error"
+  >("idle");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const verifiedRef = useRef<string | null>(null);
   const wasBusy = useRef(false);
 
   useEffect(() => setMounted(true), []);
@@ -92,11 +100,40 @@ export function DepositModal({
     ) {
       setSuccess(true);
       wasBusy.current = d.isBusy;
-      const t = setTimeout(() => onClose(), 2500);
-      return () => clearTimeout(t);
+      return;
     }
     wasBusy.current = d.isBusy;
-  }, [d.isBusy, d.error, lastAction, onClose, success]);
+  }, [d.isBusy, d.error, lastAction, success]);
+
+  // Post the confirmed on-chain tx to the backend for verification.
+  useEffect(() => {
+    const txHash = d.lastDepositTxHash;
+    if (!txHash) return;
+    if (verifiedRef.current === txHash) return;
+    if (!token) {
+      setVerifyState("error");
+      setVerifyError(
+        "Deposit confirmed on-chain, but you are signed out. Sign in to credit it.",
+      );
+      return;
+    }
+    verifiedRef.current = txHash;
+    setVerifyState("pending");
+    setVerifyError(null);
+    api
+      .verifyDeposit({ txHash, amount: selectedPackage }, token)
+      .then(() => {
+        setVerifyState("done");
+        const t = setTimeout(() => onClose(), 2000);
+        return () => clearTimeout(t);
+      })
+      .catch((e: unknown) => {
+        setVerifyState("error");
+        setVerifyError(
+          e instanceof Error ? e.message : "Backend verification failed.",
+        );
+      });
+  }, [d.lastDepositTxHash, onClose, selectedPackage, token]);
 
   const handleApprove = async () => {
     setLastAction("approve");
@@ -163,10 +200,29 @@ export function DepositModal({
         <div className="space-y-4 px-5 py-5">
           {success ? (
             <div className="rounded-md border border-hud-cyan/30 bg-blue-50 p-4 text-sm text-foreground">
-              <p className="font-medium text-hud-cyan">Deposit confirmed</p>
-              <p className="mt-1 text-xs text-hud-dim">
-                Closing this dialog…
-              </p>
+              <p className="font-medium text-hud-cyan">Deposit confirmed on-chain</p>
+              {verifyState === "pending" ? (
+                <p className="mt-1 text-xs text-hud-dim">
+                  Verifying with backend…
+                </p>
+              ) : verifyState === "done" ? (
+                <p className="mt-1 text-xs text-hud-dim">
+                  Credited. Closing this dialog…
+                </p>
+              ) : verifyState === "error" ? (
+                <p className="mt-1 text-xs text-hud-danger break-words">
+                  {verifyError ?? "Verification failed."}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-hud-dim">
+                  Waiting for confirmation…
+                </p>
+              )}
+              {d.lastDepositTxHash ? (
+                <p className="mt-2 break-all font-mono text-[10px] text-hud-dim">
+                  tx: {d.lastDepositTxHash}
+                </p>
+              ) : null}
             </div>
           ) : (
             <>

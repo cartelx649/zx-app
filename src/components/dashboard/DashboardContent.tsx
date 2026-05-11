@@ -7,14 +7,16 @@ import { HudPanel } from "@/components/hud/HudPanel";
 import { HudProgress } from "@/components/hud/HudProgress";
 import { HudStat } from "@/components/hud/HudStat";
 import { DepositActions } from "@/components/dashboard/DepositActions";
-import { useDashboardMock } from "@/hooks/useDashboardMock";
+import { useDashboard } from "@/hooks/useDashboard";
+import { useAuth } from "@/hooks/useAuth";
 import { parseDepositAddress } from "@/hooks/useUsdtDeposit";
 import type { PackageTier } from "@/lib/types/dashboard";
 
 const PACKAGES: PackageTier[] = [1, 100, 500, 1000];
 
 export function DashboardContent() {
-  const d = useDashboardMock();
+  const { isAuthenticated, isAuthenticating, signIn } = useAuth();
+  const { data: d, isLoading, error, refetch } = useDashboard();
   const [selectedPackage, setSelectedPackage] = useState<PackageTier | null>(
     d.currentPackageUsdt,
   );
@@ -33,6 +35,27 @@ export function DashboardContent() {
   const depositEnv = process.env.NEXT_PUBLIC_DEPOSIT_CONTRACT;
   const depositAddress = parseDepositAddress(depositEnv);
 
+  if (!isAuthenticated) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-10">
+        <HudPanel title="Sign in required" subtitle="Authenticate to load your dashboard" accent="amber">
+          <p className="text-sm text-hud-dim">
+            Connect your wallet and sign the login nonce to load live data from the
+            backend. Your signature stays in your wallet — only the resulting JWT is
+            stored locally.
+          </p>
+          <HudButton
+            className="mt-4"
+            disabled={isAuthenticating}
+            onClick={() => void signIn()}
+          >
+            {isAuthenticating ? "Signing in…" : "Sign in with wallet"}
+          </HudButton>
+        </HudPanel>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 pb-24">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -41,6 +64,9 @@ export function DashboardContent() {
           <h1 className="text-2xl font-semibold text-foreground md:text-3xl">Overview</h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <HudButton variant="ghost" onClick={() => void refetch()}>
+            {isLoading ? "Refreshing…" : "Refresh"}
+          </HudButton>
           <Link href="/dashboard/team" className={hudButtonClass("ghost")}>
             Team tree
           </Link>
@@ -49,6 +75,11 @@ export function DashboardContent() {
           </Link>
         </div>
       </div>
+      {error ? (
+        <div className="rounded-md border border-hud-danger/30 bg-red-50 px-3 py-2 text-sm text-hud-danger">
+          {error}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <HudPanel

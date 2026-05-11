@@ -10,6 +10,7 @@ import {
 } from "wagmi";
 import { bsc, bscTestnet } from "wagmi/chains";
 import { HudButton } from "@/components/hud/HudButton";
+import { useAuth } from "@/hooks/useAuth";
 
 function shortAddress(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -30,6 +31,13 @@ export function WalletBar() {
   const { connect, connectors, isPending, variables } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const {
+    isAuthenticated,
+    isAuthenticating,
+    signIn,
+    signOut,
+    error: authError,
+  } = useAuth();
 
   const isBsc = chainId === bsc.id || chainId === bscTestnet.id;
 
@@ -73,6 +81,25 @@ export function WalletBar() {
               >
                 {isSwitching ? "Switching…" : "Switch to BSC"}
               </HudButton>
+            ) : isAuthenticated ? (
+              <HudButton variant="ghost" onClick={signOut}>
+                Sign out
+              </HudButton>
+            ) : (
+              <HudButton
+                disabled={isAuthenticating}
+                onClick={() => void signIn()}
+              >
+                {isAuthenticating ? "Signing in…" : "Sign in"}
+              </HudButton>
+            )}
+            {authError && !isAuthenticated ? (
+              <span
+                className="max-w-[16rem] truncate text-xs text-hud-danger"
+                title={authError}
+              >
+                {authError}
+              </span>
             ) : null}
             <HudButton variant="ghost" onClick={() => disconnect()}>
               Disconnect
