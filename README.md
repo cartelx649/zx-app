@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment (on-chain deposits)
+
+Copy `.env.example` to `.env.local` and set:
+
+- **`NEXT_PUBLIC_DEPOSIT_CONTRACT`** — your deposit contract on **BNB Smart Chain** (mainnet or testnet must match the network the user selects in their wallet). Example: `0x808E74dCD60702daAFB18Dcbae8784693FDDc936`.
+
+The app reads the USDT token address from the contract’s `token()` function, then uses **approve** + **deposit(amount)** in USDT units (decimals from the token).
+
 ## Getting Started
 
 First, run the development server:

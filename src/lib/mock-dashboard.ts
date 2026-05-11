@@ -1,0 +1,43 @@
+import type { DashboardMock } from "@/lib/types/dashboard";
+
+/** Demo payload aligned with Business & Technical Model sections 4–13 */
+export const mockDashboard: DashboardMock = {
+  walletAddress: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  sponsorAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  referralId: "ZX-7F2A9C",
+  joiningDate: "2026-04-12",
+  currentPackageUsdt: 500,
+  currentCycle: 2,
+  roiSlabLabel: "500–999 USDT slab (admin configurable)",
+  roiEarnedUsdt: 320,
+  roiTargetUsdt: 1000,
+  totalEarnedUsdt: 890,
+  capMaxUsdt: 1500,
+  capEarnedUsdt: 890,
+  directIncomeUsdt: 75,
+  levelIncomeByLevel: [
+    { level: 1, percentLabel: "configurable", earnedUsdt: 42 },
+    { level: 2, percentLabel: "configurable", earnedUsdt: 28 },
+    { level: 3, percentLabel: "configurable", earnedUsdt: 15 },
+    { level: 4, percentLabel: "configurable", earnedUsdt: 8 },
+    { level: 5, percentLabel: "configurable", earnedUsdt: 4 },
+  ],
+  referralLink: "https://zx.app/join?ref=ZX-7F2A9C",
+  teamPreview: [
+    { address: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0b", depth: 1, packageUsdt: 100 },
+    { address: "0x88b44C4f7b0d4c3e2a1f9d8c7b6a59483726150", depth: 2, packageUsdt: 500 },
+    { address: "0x9a1b2c3d4e5f60718293a4b5c6d7e8f901234567", depth: 2, packageUsdt: 1000 },
+  ],
+  activeCycleLabel: "Cycle 2 — ROI toward 2X, total cap 3X",
+  accountActive: true,
+  needsReTopUp: false,
+  withdrawalWindowNote: "Withdrawals open every month on the 4th.",
+};
+
+export function getMockWithdrawals() {
+  return [
+    { id: "w1", date: "2026-05-04", amountUsdt: 120, status: "Completed" as const },
+    { id: "w2", date: "2026-04-04", amountUsdt: 200, status: "Completed" as const },
+    { id: "w3", date: "2026-03-04", amountUsdt: 95, status: "Completed" as const },
+  ];
+}
