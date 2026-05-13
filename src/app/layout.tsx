@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
-import { Barlow, Orbitron } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Web3Provider } from "@/components/providers/Web3Provider";
 
-const orbitron = Orbitron({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-orbitron",
+  variable: "--font-inter",
   display: "swap",
 });
 
-const barlow = Barlow({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-barlow",
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Zx — Network growth on BSC",
+  title: "Cronix — Network growth on BSC",
   description:
     "ROI, referrals, and cycles on BNB Smart Chain with USDT (BEP-20). Treasury model dashboard.",
 };
@@ -28,7 +28,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${orbitron.variable} ${barlow.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${spaceGrotesk.variable}`}
+    >
       <body className="min-h-screen font-sans antialiased">
         <Web3Provider>{children}</Web3Provider>
       </body>

@@ -2,16 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
-import { api, type DashboardApi, type MeResponse } from "@/lib/api";
+import { api, type DashboardApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
-import { mockDashboard } from "@/lib/mock-dashboard";
-import type { DashboardMock, PackageTier } from "@/lib/types/dashboard";
-
-function pickPackage(value: unknown): PackageTier {
-  const n = typeof value === "number" ? value : Number(value);
-  if (n === 1 || n === 100 || n === 500 || n === 1000) return n;
-  return mockDashboard.currentPackageUsdt;
-}
+import type { Dashboard } from "@/lib/types/dashboard";
 
 function num(value: unknown, fallback = 0): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -22,63 +15,130 @@ function str(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
-function buildReferralLink(referralId: string | undefined): string {
-  if (!referralId) return mockDashboard.referralLink;
+function buildReferralLink(referralId: string): string {
+  if (!referralId) return "";
   if (typeof window !== "undefined") {
     return `${window.location.origin}/?ref=${encodeURIComponent(referralId)}`;
   }
-  return `https://zx.app/join?ref=${encodeURIComponent(referralId)}`;
+  return "";
 }
 
-function adapt(
-  api: DashboardApi | undefined,
-  me: MeResponse | undefined,
-  walletAddress: `0x${string}` | undefined,
-): DashboardMock {
-  const cycle = api?.cycle ?? {};
-  const incomes = api?.incomes ?? {};
-  const withdrawals = api?.withdrawals ?? {};
+function composeWindowNote(day: number, isOpen: boolean, isOpenNow: boolean): string {
+  if (!day) return "Schedule pending";
+  const base = `Opens on day ${day} of each month`;
+  if (!isOpen) return `${base} — paused by admin`;
+  return isOpenNow ? `${base} — open now` : base;
+}
 
-  const currentPackage = pickPackage(cycle.packageUsdt);
-  const referralId = str(me?.referralId, mockDashboard.referralId);
+const EMPTY_DASHBOARD: Dashboard = {
+  walletAddress: "",
+  sponsorAddress: "",
+  referralId: "",
+  referralLink: "",
+  joiningDate: "",
+  totalInvestedUsdt: 0,
+  roiEarnedToDateUsdt: 0,
+  claimedRoiUsdt: 0,
+  remainingRoiUsdt: 0,
+  directIncomeUsdt: 0,
+  levelIncomeUsdt: 0,
+  totalIncomeEarnedUsdt: 0,
+  totalIncomeClaimedUsdt: 0,
+  toBeClaimedUsdt: 0,
+  levelIncomeByLevel: [],
+  cycleExists: false,
+  currentCycle: 0,
+  currentPackageUsdt: 0,
+  roiEarnedUsdt: 0,
+  roiTargetUsdt: 0,
+  capEarnedUsdt: 0,
+  capMaxUsdt: 0,
+  totalEarnedUsdt: 0,
+  roiSlabLabel: "",
+  slab: null,
+  activeCycleLabel: "",
+  accountActive: false,
+  needsReTopUp: false,
+  withdrawalWindowDay: 0,
+  withdrawalWindowOpen: false,
+  withdrawalWindowOpenNow: false,
+  withdrawalWindowNote: "",
+};
+
+function adapt(
+  raw: DashboardApi | undefined,
+  walletAddress: `0x${string}` | undefined,
+): Dashboard {
+  if (!raw) {
+    return {
+      ...EMPTY_DASHBOARD,
+      walletAddress: walletAddress ?? "",
+    };
+  }
+
+  const investments = raw.investments;
+  const income = raw.income;
+  const cycle = raw.activeCycle;
+  const referral = raw.referral;
+  const win = raw.withdrawalWindow;
+
+  const referralId = str(referral?.referralId);
+  const referralLink =
+    str(referral?.referralLink) || buildReferralLink(referralId);
+  const currentCycle = num(cycle?.cycleNumber);
+  const cycleExists = Boolean(cycle?.exists);
+  const slab = cycle?.slab ?? null;
 
   return {
-    walletAddress:
-      (walletAddress ?? (str(me?.walletAddress) as `0x${string}`)) ||
-      mockDashboard.walletAddress,
-    sponsorAddress:
-      (str(me?.sponsorWalletAddress) as `0x${string}`) ||
-      mockDashboard.sponsorAddress,
+    walletAddress: walletAddress ?? str(referral?.walletAddress),
+    sponsorAddress: str(referral?.sponsorWalletAddress),
     referralId,
-    joiningDate: str(me?.joiningDate, mockDashboard.joiningDate),
-    currentPackageUsdt: currentPackage,
-    currentCycle: num(cycle.number ?? cycle.current, mockDashboard.currentCycle),
-    roiSlabLabel: str(cycle.roiSlabLabel, mockDashboard.roiSlabLabel),
-    roiEarnedUsdt: num(cycle.roiEarnedUsdt),
-    roiTargetUsdt: num(cycle.roiTargetUsdt, currentPackage * 2),
-    totalEarnedUsdt: num(incomes.totalEarnedUsdt),
-    capMaxUsdt: num(cycle.capMaxUsdt, currentPackage * 3),
-    capEarnedUsdt: num(cycle.capEarnedUsdt ?? incomes.totalEarnedUsdt),
-    directIncomeUsdt: num(incomes.directIncomeUsdt),
-    levelIncomeByLevel:
-      Array.isArray(incomes.levelByLevel) && incomes.levelByLevel.length > 0
-        ? incomes.levelByLevel.map((l) => ({
-            level: num(l.level),
-            percentLabel: str(l.percentLabel, "configurable"),
-            earnedUsdt: num(l.earnedUsdt),
-          }))
-        : mockDashboard.levelIncomeByLevel.map((l) => ({ ...l, earnedUsdt: 0 })),
-    referralLink: str(me?.referralLink) || buildReferralLink(referralId),
-    teamPreview: mockDashboard.teamPreview, // not part of /users/dashboard
-    activeCycleLabel: str(
-      cycle.activeCycleLabel,
-      `Cycle ${num(cycle.number ?? cycle.current, 1)} — ROI toward 2X, total cap 3X`,
-    ),
-    accountActive: cycle.active ?? true,
-    needsReTopUp: cycle.needsReTopUp ?? false,
-    withdrawalWindowNote: str(
-      withdrawals.windowNote,
-      mockDashboard.withdrawalWindowNote,
+    referralLink,
+    joiningDate: str(referral?.joinedAt),
+
+    totalInvestedUsdt: num(investments?.totalInvestedValue),
+    roiEarnedToDateUsdt: num(investments?.roiEarnedToDate),
+    claimedRoiUsdt: num(investments?.claimedRoi),
+    remainingRoiUsdt: num(investments?.remainingRoi),
+
+    directIncomeUsdt: num(income?.directIncome),
+    levelIncomeUsdt: num(income?.levelIncome),
+    totalIncomeEarnedUsdt: num(income?.totalIncomeEarned),
+    totalIncomeClaimedUsdt: num(income?.totalIncomeClaimed),
+    toBeClaimedUsdt: num(income?.toBeClaimed),
+    levelIncomeByLevel: [],
+
+    cycleExists,
+    currentCycle,
+    currentPackageUsdt: num(cycle?.packageAmount),
+    roiEarnedUsdt: num(cycle?.earnedRoi),
+    roiTargetUsdt: num(cycle?.roiTarget),
+    capEarnedUsdt: num(cycle?.totalEarned),
+    capMaxUsdt: num(cycle?.incomeCap),
+    totalEarnedUsdt: num(cycle?.totalEarned),
+    roiSlabLabel: str(slab?.label),
+    slab: slab
+      ? {
+          name: str(slab.name),
+          min: num(slab.min),
+          max: num(slab.max),
+          monthlyPercent: num(slab.monthlyPercent),
+          label: str(slab.label),
+        }
+      : null,
+    activeCycleLabel: cycleExists
+      ? `Cycle ${currentCycle} — ROI toward 2X, total cap 3X`
+      : "",
+    accountActive: Boolean(cycle?.accountActive),
+    needsReTopUp: Boolean(cycle?.retopUpRequired),
+
+    withdrawalWindowDay: num(win?.dayOfMonth),
+    withdrawalWindowOpen: Boolean(win?.isOpen),
+    withdrawalWindowOpenNow: Boolean(win?.isOpenNow),
+    withdrawalWindowNote: composeWindowNote(
+      num(win?.dayOfMonth),
+      Boolean(win?.isOpen),
+      Boolean(win?.isOpenNow),
     ),
   };
 }
@@ -101,18 +161,11 @@ export function useDashboard() {
     enabled,
     queryFn: () => api.getDashboard(token!),
     staleTime: 30_000,
-  });
-
-  const meQuery = useQuery({
-    queryKey: ["me", address, Boolean(token)],
-    enabled,
-    queryFn: () => api.getMe(token!),
-    staleTime: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const adapted = adapt(
     dashboardQuery.data,
-    meQuery.data,
     address as `0x${string}` | undefined,
   );
 
@@ -126,16 +179,14 @@ export function useDashboard() {
     data: adapted,
     withdrawals,
     isAuthenticated,
-    isLoading: dashboardQuery.isLoading || meQuery.isLoading,
-    isFetching: dashboardQuery.isFetching || meQuery.isFetching,
+    isLoading: dashboardQuery.isLoading,
+    isFetching: dashboardQuery.isFetching,
     error:
       dashboardQuery.error instanceof Error
         ? dashboardQuery.error.message
-        : meQuery.error instanceof Error
-          ? meQuery.error.message
-          : null,
+        : null,
     refetch: async () => {
-      await Promise.all([dashboardQuery.refetch(), meQuery.refetch()]);
+      await dashboardQuery.refetch();
     },
   };
 }

@@ -10,8 +10,12 @@ export default function TeamPage() {
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-hud-dim">Dashboard</p>
-          <h1 className="text-2xl font-semibold">Team tree</h1>
+          <p className="text-sm uppercase tracking-wider text-white/45">
+            Dashboard
+          </p>
+          <h1 className="font-display text-3xl font-semibold text-white">
+            Team tree
+          </h1>
         </div>
         <Link href="/dashboard" className={hudButtonClass("ghost")}>
           Back to overview
@@ -23,8 +27,8 @@ export default function TeamPage() {
         subtitle="Sponsor relationship remains fixed"
         accent="cyan"
       >
-        <p className="font-mono text-sm text-foreground">{d.walletAddress}</p>
-        <p className="mt-2 text-sm text-hud-dim">
+        <p className="font-mono text-sm text-white/85">{d.walletAddress}</p>
+        <p className="mt-2 text-sm text-white/55">
           Downlines shown with depth. ROI override income can trace up to 20
           levels when downline receives monthly ROI.
         </p>
@@ -35,26 +39,26 @@ export default function TeamPage() {
           {d.teamPreview.map((m) => (
             <div
               key={m.address}
-              className="relative border-l-2 border-hud-cyan/30 pl-4"
+              className="relative border-l-2 border-purple-500/30 pl-4"
               style={{ marginLeft: `${(m.depth - 1) * 16}px` }}
             >
-              <div className="rounded-lg border border-hud-stroke bg-white p-3">
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 transition hover:border-purple-400/30 hover:bg-white/[0.04]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-mono text-xs text-foreground">
+                  <span className="font-mono text-xs text-white/85">
                     {m.address}
                   </span>
-                  <span className="text-xs text-hud-dim">
+                  <span className="text-xs text-white/50">
                     Depth {m.depth}
                   </span>
                 </div>
-                <p className="mt-1 text-sm font-medium text-hud-amber">
+                <p className="mt-1 text-sm font-medium text-amber-300">
                   Package {m.packageUsdt} USDT
                 </p>
               </div>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-sm text-hud-dim">
+        <p className="mt-4 text-sm text-white/55">
           Live tree data will replace this preview when the indexer/API is
           connected.
         </p>

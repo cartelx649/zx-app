@@ -3,16 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --background: #f6f8fb;
-  --foreground: #0f172a;
-  --hud-base: #ffffff;
-  --hud-panel: #ffffff;
-  --hud-stroke: #dbe2ea;
-  --hud-cyan: #2563eb;
-  --hud-magenta: #7c3aed;
-  --hud-amber: #b45309;
-  --hud-dim: #64748b;
-  --hud-danger: #dc2626;
+  --background: #050505;
+  --foreground: #fafafa;
+  --hud-base: rgba(255, 255, 255, 0.02);
+  --hud-panel: rgba(20, 20, 30, 0.55);
+  --hud-stroke: rgba(255, 255, 255, 0.08);
+  --hud-cyan: #7c3aed;
+  --hud-magenta: #a855f7;
+  --hud-amber: #f59e0b;
+  --hud-dim: #9ca3af;
+  --hud-danger: #f87171;
+  --glass-bg: rgba(20, 20, 30, 0.55);
+  --glass-stroke: rgba(255, 255, 255, 0.08);
+  --glow-purple: #a855f7;
 }
 
 @layer base {
@@ -21,12 +24,40 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    background-image: linear-gradient(180deg, #f8fafc 0%, var(--background) 100%);
     min-height: 100vh;
+    background-color: var(--background);
+    background-image:
+      radial-gradient(
+        circle at 12% 8%,
+        rgba(124, 58, 237, 0.18) 0%,
+        rgba(124, 58, 237, 0) 45%
+      ),
+      radial-gradient(
+        circle at 88% 92%,
+        rgba(168, 85, 247, 0.16) 0%,
+        rgba(168, 85, 247, 0) 50%
+      ),
+      radial-gradient(
+        circle at 1px 1px,
+        rgba(255, 255, 255, 0.045) 1px,
+        transparent 0
+      );
+    background-size:
+      100% 100%,
+      100% 100%,
+      28px 28px;
+    background-attachment: fixed, fixed, fixed;
   }
 }
 
 @layer utilities {
+  .glass {
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-stroke);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
   .hud-clip {
     clip-path: polygon(
       0 0,
@@ -37,4 +68,28 @@
       0 calc(100% - 12px)
     );
   }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbit-tilt {
+  from { transform: rotateX(72deg) rotateZ(0deg); }
+  to { transform: rotateX(72deg) rotateZ(360deg); }
+}
+
+@keyframes orbit-tilt-reverse {
+  from { transform: rotateX(68deg) rotateZ(360deg); }
+  to { transform: rotateX(68deg) rotateZ(0deg); }
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-18px, 24px, 0); }
 }

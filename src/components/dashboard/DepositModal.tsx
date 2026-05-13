@@ -35,11 +35,11 @@ function StepRow({
 }) {
   const dotClass =
     state === "done"
-      ? "bg-hud-cyan/15 text-hud-cyan border-hud-cyan/30"
+      ? "bg-purple-500/20 text-purple-200 border-purple-400/40"
       : state === "active"
-        ? "bg-hud-amber/15 text-hud-amber border-hud-amber/30"
-        : "bg-slate-50 text-hud-dim border-hud-stroke";
-  const labelClass = state === "locked" ? "text-hud-dim" : "text-foreground";
+        ? "bg-amber-400/15 text-amber-300 border-amber-400/40"
+        : "bg-white/5 text-white/45 border-white/10";
+  const labelClass = state === "locked" ? "text-white/50" : "text-white";
   return (
     <div className="flex gap-3">
       <div
@@ -49,7 +49,7 @@ function StepRow({
       </div>
       <div className="min-w-0 flex-1">
         <p className={`text-sm font-medium ${labelClass}`}>{title}</p>
-        {hint ? <div className="mt-1 text-xs text-hud-dim">{hint}</div> : null}
+        {hint ? <div className="mt-1 text-xs text-white/55">{hint}</div> : null}
         {action ? <div className="mt-2">{action}</div> : null}
       </div>
     </div>
@@ -171,19 +171,23 @@ export function DepositModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-md"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md overflow-hidden rounded-xl border border-hud-cyan/20 bg-hud-panel shadow-sm animate-panel-in"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b14]/95 shadow-[0_24px_60px_-12px_rgba(124,58,237,0.45)] backdrop-blur-2xl animate-panel-in"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex items-start justify-between gap-2 border-b border-hud-stroke px-5 py-4">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-60 w-60 rounded-full bg-purple-600/25 blur-3xl"
+        />
+        <header className="relative flex items-start justify-between gap-2 border-b border-white/10 px-5 py-4">
           <div>
-            <h2 className="text-base font-semibold text-foreground">
+            <h2 className="font-display text-base font-semibold text-white">
               Deposit {selectedPackage} USDT
             </h2>
-            <p className="mt-0.5 text-xs text-hud-dim">
+            <p className="mt-0.5 text-xs text-white/55">
               USDT (BEP-20) · BNB Smart Chain
             </p>
           </div>
@@ -191,35 +195,37 @@ export function DepositModal({
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="rounded-md border border-hud-stroke px-2 py-1 text-xs text-hud-dim hover:text-foreground"
+            className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/65 transition hover:border-purple-400/30 hover:text-white"
           >
             ✕
           </button>
         </header>
 
-        <div className="space-y-4 px-5 py-5">
+        <div className="relative space-y-4 px-5 py-5">
           {success ? (
-            <div className="rounded-md border border-hud-cyan/30 bg-blue-50 p-4 text-sm text-foreground">
-              <p className="font-medium text-hud-cyan">Deposit confirmed on-chain</p>
+            <div className="rounded-xl border border-purple-400/30 bg-purple-500/10 p-4 text-sm text-white/85">
+              <p className="font-medium text-purple-200">
+                Deposit confirmed on-chain
+              </p>
               {verifyState === "pending" ? (
-                <p className="mt-1 text-xs text-hud-dim">
+                <p className="mt-1 text-xs text-white/55">
                   Verifying with backend…
                 </p>
               ) : verifyState === "done" ? (
-                <p className="mt-1 text-xs text-hud-dim">
+                <p className="mt-1 text-xs text-white/55">
                   Credited. Closing this dialog…
                 </p>
               ) : verifyState === "error" ? (
-                <p className="mt-1 text-xs text-hud-danger break-words">
+                <p className="mt-1 break-words text-xs text-red-300">
                   {verifyError ?? "Verification failed."}
                 </p>
               ) : (
-                <p className="mt-1 text-xs text-hud-dim">
+                <p className="mt-1 text-xs text-white/55">
                   Waiting for confirmation…
                 </p>
               )}
               {d.lastDepositTxHash ? (
-                <p className="mt-2 break-all font-mono text-[10px] text-hud-dim">
+                <p className="mt-2 break-all font-mono text-[10px] text-white/55">
                   tx: {d.lastDepositTxHash}
                 </p>
               ) : null}
@@ -267,11 +273,11 @@ export function DepositModal({
                   d.isConnected && d.isCorrectChain ? (
                     <>
                       Balance:{" "}
-                      <span className="font-medium text-foreground">
+                      <span className="font-medium text-white/85">
                         {fmt(d.balance)}
                       </span>{" "}
                       USDT {" · "} Allowance:{" "}
-                      <span className="font-medium text-foreground">
+                      <span className="font-medium text-white/85">
                         {fmt(d.allowance)}
                       </span>{" "}
                       USDT
@@ -315,14 +321,14 @@ export function DepositModal({
           )}
 
           {d.statusText ? (
-            <p className="text-xs text-hud-cyan">{d.statusText}</p>
+            <p className="text-xs text-purple-300">{d.statusText}</p>
           ) : null}
           {d.error ? (
-            <p className="text-xs text-hud-danger break-words">{d.error}</p>
+            <p className="break-words text-xs text-red-300">{d.error}</p>
           ) : null}
         </div>
 
-        <footer className="border-t border-hud-stroke px-5 py-3 text-right">
+        <footer className="relative border-t border-white/10 px-5 py-3 text-right">
           <HudButton variant="ghost" onClick={onClose}>
             Close
           </HudButton>

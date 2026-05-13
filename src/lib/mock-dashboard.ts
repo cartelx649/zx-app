@@ -1,6 +1,10 @@
 import type { DashboardMock } from "@/lib/types/dashboard";
 
-/** Demo payload aligned with Business & Technical Model sections 4–13 */
+/**
+ * Test-only fixture. NOT used at runtime — the live dashboard renders neutral
+ * placeholders ("—" / 0) when the API doesn't return a field. Kept for unit
+ * tests, Storybook, and reference of the expected shape from /users/dashboard.
+ */
 export const mockDashboard: DashboardMock = {
   walletAddress: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
   sponsorAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",

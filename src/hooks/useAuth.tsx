@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -15,7 +16,7 @@ import { api, extractToken, NONCE_MESSAGE_PREFIX } from "@/lib/api";
 
 const TOKEN_STORAGE_KEY = "zx.auth.token";
 const TOKEN_ADDRESS_KEY = "zx.auth.address";
-const SPONSOR_STORAGE_KEY = "zx.sponsorWalletAddress";
+export const SPONSOR_STORAGE_KEY = "zx.sponsorWalletAddress";
 
 type AuthState = {
   token: string | null;
@@ -36,7 +37,7 @@ function readSponsorFromUrl(): string | null {
   return null;
 }
 
-function readStoredSponsor(): string {
+export function readStoredSponsor(): string {
   if (typeof window === "undefined") return "";
   try {
     return window.localStorage.getItem(SPONSOR_STORAGE_KEY) ?? "";
@@ -45,12 +46,21 @@ function readStoredSponsor(): string {
   }
 }
 
-function persistSponsor(value: string) {
+export function persistSponsor(value: string) {
   if (typeof window === "undefined") return;
   try {
     if (value) window.localStorage.setItem(SPONSOR_STORAGE_KEY, value);
   } catch {
     // storage unavailable — non-fatal
+  }
+}
+
+export function clearStoredSponsor() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(SPONSOR_STORAGE_KEY);
+  } catch {
+    // ignore
   }
 }
 
@@ -95,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoAttemptedForAddress = useRef<string | null>(null);
 
   // Capture sponsor address from URL (?sponsor=0x... or ?ref=0x...) once per mount.
   useEffect(() => {
@@ -106,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isConnected || !address) {
       setToken(null);
+      autoAttemptedForAddress.current = null;
       return;
     }
     const stored = readStoredToken(address);
@@ -117,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError("Connect a wallet before signing in.");
       return;
     }
+    autoAttemptedForAddress.current = address;
     setIsAuthenticating(true);
     setError(null);
     try {
@@ -147,7 +160,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearStoredToken();
     setToken(null);
     setError(null);
+    autoAttemptedForAddress.current = null;
   }, []);
+
+  // Auto-trigger sign-in once per address when wallet is connected and no token exists.
+  useEffect(() => {
+    if (!isConnected || !address) return;
+    if (token) return;
+    if (isAuthenticating) return;
+    if (error) return;
+    if (autoAttemptedForAddress.current === address) return;
+    void signIn();
+  }, [address, isConnected, token, isAuthenticating, error, signIn]);
 
   const value = useMemo<AuthState>(
     () => ({

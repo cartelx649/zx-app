@@ -1,24 +1,55 @@
-export type PackageTier = 1 | 100 | 500 | 1000;
+export type DashboardSlabView = {
+  name: string;
+  min: number;
+  max: number;
+  monthlyPercent: number;
+  label: string;
+};
 
-export type DashboardMock = {
-  walletAddress: `0x${string}`;
-  sponsorAddress: `0x${string}`;
+export type Dashboard = {
+  // referral / identity
+  walletAddress: string;
+  sponsorAddress: string;
   referralId: string;
+  referralLink: string;
   joiningDate: string;
-  currentPackageUsdt: PackageTier;
+
+  // investments block
+  totalInvestedUsdt: number;
+  roiEarnedToDateUsdt: number;
+  claimedRoiUsdt: number;
+  remainingRoiUsdt: number;
+
+  // income block
+  directIncomeUsdt: number;
+  levelIncomeUsdt: number;
+  totalIncomeEarnedUsdt: number;
+  totalIncomeClaimedUsdt: number;
+  toBeClaimedUsdt: number;
+  /** Reserved for future per-level breakdown; always [] from the new API. */
+  levelIncomeByLevel?: { level: number; percentLabel: string; earnedUsdt: number }[];
+
+  // active cycle
+  cycleExists: boolean;
   currentCycle: number;
-  roiSlabLabel: string;
+  currentPackageUsdt: number;
   roiEarnedUsdt: number;
   roiTargetUsdt: number;
-  totalEarnedUsdt: number;
-  capMaxUsdt: number;
   capEarnedUsdt: number;
-  directIncomeUsdt: number;
-  levelIncomeByLevel: { level: number; percentLabel: string; earnedUsdt: number }[];
-  referralLink: string;
-  teamPreview: { address: string; depth: number; packageUsdt: number }[];
+  capMaxUsdt: number;
+  totalEarnedUsdt: number;
+  roiSlabLabel: string;
+  slab: DashboardSlabView | null;
   activeCycleLabel: string;
   accountActive: boolean;
   needsReTopUp: boolean;
+
+  // withdrawal window
+  withdrawalWindowDay: number;
+  withdrawalWindowOpen: boolean;
+  withdrawalWindowOpenNow: boolean;
   withdrawalWindowNote: string;
 };
+
+/** @deprecated Use `Dashboard`. Kept temporarily for mock-dashboard.ts compatibility. */
+export type DashboardMock = Dashboard;

@@ -1,6 +1,6 @@
-import { createConfig, http } from "wagmi";
-import { bsc, bscTestnet } from "wagmi/chains";
-import { injected, walletConnect } from "wagmi/connectors";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { bsc, bscTestnet } from "@reown/appkit/networks";
+import type { AppKitNetwork } from "@reown/appkit/networks";
 
 const bscRpc =
   process.env.NEXT_PUBLIC_BSC_RPC_URL ?? "https://bsc-dataseed.binance.org";
@@ -8,36 +8,25 @@ const bscTestnetRpc =
   process.env.NEXT_PUBLIC_BSC_TESTNET_RPC_URL ??
   "https://data-seed-prebsc-1-s1.binance.org:8545";
 
-const walletConnectProjectId =
+export const projectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";
 
-const connectors = [
-  injected(),
-  ...(walletConnectProjectId
-    ? [
-        walletConnect({
-          projectId: walletConnectProjectId,
-          showQrModal: true,
-          metadata: {
-            name: "Zx",
-            description: "Zx network growth on BNB Smart Chain",
-            url:
-              typeof window !== "undefined"
-                ? window.location.origin
-                : "https://zx.local",
-            icons: [],
-          },
-        }),
-      ]
-    : []),
-];
+if (!projectId && typeof window !== "undefined") {
+  console.warn(
+    "[wagmi] NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is missing — the Connect Wallet modal will not initialize.",
+  );
+}
 
-export const wagmiConfig = createConfig({
-  chains: [bsc, bscTestnet],
-  connectors,
-  transports: {
-    [bsc.id]: http(bscRpc),
-    [bscTestnet.id]: http(bscTestnetRpc),
+export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [bsc, bscTestnet];
+
+export const wagmiAdapter = new WagmiAdapter({
+  projectId,
+  networks,
+  customRpcUrls: {
+    [`eip155:${bsc.id}`]: [{ url: bscRpc }],
+    [`eip155:${bscTestnet.id}`]: [{ url: bscTestnetRpc }],
   },
   ssr: true,
 });
+
+export const wagmiConfig = wagmiAdapter.wagmiConfig;

@@ -85,44 +85,69 @@ export type LoginResponse = {
 
 export type VerifyDepositArgs = { txHash: string; amount: number };
 
-export type DashboardCycle = {
-  number?: number;
-  current?: number;
-  packageUsdt?: number;
-  roiSlabLabel?: string;
-  roiEarnedUsdt?: number;
-  roiTargetUsdt?: number;
-  capEarnedUsdt?: number;
-  capMaxUsdt?: number;
-  active?: boolean;
-  needsReTopUp?: boolean;
-  activeCycleLabel?: string;
-} & Record<string, unknown>;
+export type DashboardSlab = {
+  name: string;
+  min: number;
+  max: number;
+  monthlyPercent: number;
+  label: string;
+};
 
-export type DashboardIncomes = {
-  totalEarnedUsdt?: number;
-  directIncomeUsdt?: number;
-  levelByLevel?: { level: number; percentLabel?: string; earnedUsdt: number }[];
-} & Record<string, unknown>;
+export type DashboardInvestmentsApi = {
+  totalInvestedValue: number;
+  roiEarnedToDate: number;
+  claimedRoi: number;
+  remainingRoi: number;
+};
 
-export type DashboardWithdrawals = {
-  windowNote?: string;
-  history?: { id: string; date: string; amountUsdt: number; status: string }[];
-} & Record<string, unknown>;
+export type DashboardIncomeApi = {
+  directIncome: number;
+  levelIncome: number;
+  totalIncomeEarned: number;
+  totalIncomeClaimed: number;
+  toBeClaimed: number;
+};
+
+export type DashboardActiveCycleApi = {
+  exists: boolean;
+  cycleNumber: number;
+  packageAmount: number;
+  roiTarget: number;
+  earnedRoi: number;
+  incomeCap: number;
+  totalEarned: number;
+  accountActive: boolean;
+  retopUpRequired: boolean;
+  slab: DashboardSlab | null;
+  roiProgress: { current: number; target: number };
+  capProgress: { current: number; target: number };
+};
+
+export type DashboardReferralApi = {
+  referralId: string;
+  referralLink: string;
+  walletAddress: string;
+  sponsorWalletAddress: string | null;
+  joinedAt: string;
+};
+
+export type DashboardWithdrawalWindowApi = {
+  dayOfMonth: number;
+  isOpen: boolean;
+  isOpenNow: boolean;
+};
 
 export type DashboardApi = {
-  cycle?: DashboardCycle;
-  incomes?: DashboardIncomes;
-  withdrawals?: DashboardWithdrawals;
-} & Record<string, unknown>;
-
-export type MeResponse = {
-  walletAddress?: string;
-  sponsorWalletAddress?: string;
-  referralId?: string;
-  joiningDate?: string;
-  referralLink?: string;
-} & Record<string, unknown>;
+  investments: DashboardInvestmentsApi;
+  income: DashboardIncomeApi;
+  activeCycle: DashboardActiveCycleApi;
+  referral: DashboardReferralApi;
+  withdrawalWindow: DashboardWithdrawalWindowApi;
+  /** Legacy — not in the documented shape but still read by /dashboard/withdrawals until a dedicated endpoint exists. */
+  withdrawals?: {
+    history?: { id: string; date: string; amountUsdt: number; status: string }[];
+  };
+};
 
 export const api = {
   requestNonce: (walletAddress: string) =>
@@ -151,8 +176,6 @@ export const api = {
 
   getDashboard: (token: string) =>
     apiFetch<DashboardApi>("/users/dashboard", { token }),
-
-  getMe: (token: string) => apiFetch<MeResponse>("/users/me", { token }),
 
   health: () => apiFetch<unknown>("/health"),
 };

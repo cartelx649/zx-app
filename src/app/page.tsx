@@ -1,102 +1,277 @@
-import Link from "next/link";
-import { hudButtonClass } from "@/components/hud/HudButton";
-import { HudPanel } from "@/components/hud/HudPanel";
+"use client";
 
-const flowSteps = [
-  { title: "Join", detail: "Create your account using a referral link." },
-  { title: "Deposit", detail: "Choose a package: 100, 500, or 1000 USDT." },
-  { title: "Earn", detail: "Monthly ROI runs until your 2X target is reached." },
-  { title: "Network", detail: "Direct and team income are tracked automatically." },
-  { title: "Cap", detail: "Total earnings stop at the 3X platform cap." },
-  { title: "Restart", detail: "Re-top up with the same or higher package." },
+import Link from "next/link";
+import { useAccount, useDisconnect } from "wagmi";
+import { useAppKit } from "@reown/appkit/react";
+
+function CronixMark() {
+  return (
+    <span className="grid h-8 w-8 place-items-center rounded-full bg-black ring-1 ring-white/10">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        className="h-5 w-5 text-white"
+        aria-hidden
+      >
+        <ellipse cx="12" cy="12" rx="8.5" ry="3.5" transform="rotate(-20 12 12)" />
+        <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
+      </svg>
+    </span>
+  );
+}
+
+function shortAddress(addr: string) {
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+function ConnectWalletButton() {
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { open } = useAppKit();
+
+  if (isConnected && address) {
+    return (
+      <button
+        type="button"
+        onClick={() => disconnect()}
+        className="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 font-mono text-sm text-blue-200 transition hover:bg-blue-500/20"
+      >
+        {shortAddress(address)}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void open()}
+      className="rounded-full border border-blue-500/40 bg-blue-500/15 px-4 py-1.5 text-sm font-medium text-blue-200 transition hover:bg-blue-500/25"
+    >
+      Connect Wallet
+    </button>
+  );
+}
+
+const STARS: { x: number; y: number; size: number; delay: number; dur: number }[] = [
+  { x: 4, y: 8, size: 2, delay: 0.0, dur: 3.2 },
+  { x: 12, y: 22, size: 1, delay: 1.4, dur: 4.0 },
+  { x: 18, y: 75, size: 1.5, delay: 0.6, dur: 3.6 },
+  { x: 22, y: 14, size: 1, delay: 2.1, dur: 3.4 },
+  { x: 28, y: 40, size: 2, delay: 0.9, dur: 4.2 },
+  { x: 33, y: 80, size: 1, delay: 1.6, dur: 3.8 },
+  { x: 38, y: 18, size: 1.5, delay: 0.3, dur: 3.5 },
+  { x: 42, y: 62, size: 1, delay: 2.4, dur: 4.4 },
+  { x: 48, y: 12, size: 2, delay: 1.0, dur: 3.0 },
+  { x: 52, y: 88, size: 1, delay: 0.7, dur: 4.1 },
+  { x: 58, y: 30, size: 1.5, delay: 1.9, dur: 3.7 },
+  { x: 62, y: 68, size: 1, delay: 0.4, dur: 4.3 },
+  { x: 67, y: 16, size: 2, delay: 2.2, dur: 3.3 },
+  { x: 72, y: 82, size: 1, delay: 1.2, dur: 3.9 },
+  { x: 78, y: 28, size: 1.5, delay: 0.5, dur: 4.0 },
+  { x: 82, y: 60, size: 1, delay: 1.7, dur: 3.6 },
+  { x: 88, y: 10, size: 2, delay: 0.8, dur: 3.5 },
+  { x: 92, y: 70, size: 1, delay: 2.0, dur: 4.2 },
+  { x: 96, y: 38, size: 1.5, delay: 1.1, dur: 3.8 },
+  { x: 8, y: 50, size: 1, delay: 0.2, dur: 4.5 },
+  { x: 15, y: 90, size: 1.5, delay: 1.8, dur: 3.4 },
+  { x: 25, y: 55, size: 1, delay: 2.3, dur: 4.1 },
+  { x: 36, y: 95, size: 2, delay: 0.6, dur: 3.7 },
+  { x: 46, y: 45, size: 1, delay: 1.3, dur: 3.9 },
+  { x: 55, y: 5, size: 1.5, delay: 0.9, dur: 4.0 },
+  { x: 65, y: 48, size: 1, delay: 2.5, dur: 3.2 },
+  { x: 74, y: 6, size: 2, delay: 0.4, dur: 4.3 },
+  { x: 85, y: 92, size: 1, delay: 1.5, dur: 3.6 },
+  { x: 94, y: 22, size: 1.5, delay: 2.0, dur: 4.4 },
+  { x: 3, y: 65, size: 1, delay: 1.0, dur: 3.5 },
 ];
+
+function Starfield() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {STARS.map((s, i) => (
+        <span
+          key={i}
+          className="absolute rounded-full bg-white"
+          style={{
+            left: `${s.x}%`,
+            top: `${s.y}%`,
+            width: `${s.size}px`,
+            height: `${s.size}px`,
+            opacity: 0.25,
+            boxShadow: "0 0 4px rgba(255,255,255,0.7)",
+            animation: `twinkle ${s.dur}s ease-in-out ${s.delay}s infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Planet3D() {
+  return (
+    <div
+      aria-hidden
+      className="relative h-[420px] w-[420px] sm:h-[520px] sm:w-[520px]"
+      style={{ perspective: "1400px" }}
+    >
+      {/* outer halo */}
+      <div className="absolute inset-0 rounded-full bg-fuchsia-600/30 blur-[80px]" />
+      <div className="absolute inset-8 rounded-full bg-purple-500/25 blur-[60px] animate-glow-pulse" />
+
+      {/* tilted orbital ring 1 */}
+      <div
+        className="absolute inset-0 grid place-items-center"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        <div
+          className="absolute h-[92%] w-[92%] rounded-full border-2 border-purple-300/30"
+          style={{
+            animation: "orbit-tilt 18s linear infinite",
+            boxShadow:
+              "0 0 24px rgba(168,85,247,0.35), inset 0 0 24px rgba(168,85,247,0.18)",
+          }}
+        />
+        {/* tilted orbital ring 2 (counter-rotating, different tilt) */}
+        <div
+          className="absolute h-full w-full rounded-full border border-fuchsia-300/25"
+          style={{
+            animation: "orbit-tilt-reverse 28s linear infinite",
+            boxShadow:
+              "0 0 18px rgba(232,121,249,0.3), inset 0 0 18px rgba(232,121,249,0.15)",
+          }}
+        />
+
+        {/* the planet */}
+        <div className="relative h-[55%] w-[55%]">
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at 30% 28%, #f0abfc 0%, #c026d3 18%, #7c3aed 45%, #2e1065 78%, #000 100%)",
+              boxShadow:
+                "inset -40px -50px 90px rgba(0,0,0,0.75), 0 0 60px rgba(168,85,247,0.55), 0 0 120px rgba(168,85,247,0.25)",
+            }}
+          />
+          {/* sheen */}
+          <div
+            className="absolute left-[18%] top-[16%] h-[26%] w-[36%] rounded-full bg-white/30 blur-2xl"
+            aria-hidden
+          />
+          {/* atmosphere ring */}
+          <div className="absolute -inset-1 rounded-full border border-white/10" />
+        </div>
+
+        {/* orbital particle on ring 1 */}
+        <div
+          className="absolute h-[92%] w-[92%]"
+          style={{ animation: "orbit-tilt 18s linear infinite" }}
+        >
+          <span
+            className="absolute left-1/2 top-0 -translate-x-1/2 rounded-full bg-fuchsia-200"
+            style={{
+              width: "10px",
+              height: "10px",
+              boxShadow: "0 0 18px 4px rgba(232,121,249,0.85)",
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <main className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col gap-10 px-4 py-14">
-      <header className="space-y-4 text-center md:text-left">
-        <p className="text-sm font-medium text-hud-cyan">
-          BNB Smart Chain · USDT (BEP-20)
-        </p>
-        <h1 className="font-display text-4xl font-bold leading-tight text-foreground md:text-5xl">
-          Zx
-          <span className="block text-lg font-medium text-hud-dim md:text-xl">
-            Simple dashboard for your ROI and team activity
-          </span>
-        </h1>
-        <p className="max-w-2xl text-base text-hud-dim md:text-lg">
-          Track deposits, ROI progress, income, and withdrawals in one clear
-          place with a clean interface.
-        </p>
-        <div className="flex flex-wrap justify-center gap-3 md:justify-start">
-          <Link href="/dashboard" className={hudButtonClass()}>
-            Open dashboard
-          </Link>
+    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+      {/* deep-space gradients */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 35%, rgba(124,58,237,0.22) 0%, rgba(124,58,237,0) 55%), radial-gradient(ellipse at 12% 90%, rgba(232,121,249,0.18) 0%, rgba(232,121,249,0) 55%), radial-gradient(ellipse at 88% 8%, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0) 55%)",
+        }}
+      />
+
+      {/* floating colored orbs — same vocabulary as the dashboard */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-32 top-24 h-[28rem] w-[28rem] rounded-full bg-purple-600/30 blur-3xl animate-float-orb"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-fuchsia-600/20 blur-3xl animate-float-orb"
+        style={{ animationDelay: "-6s" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/4 bottom-0 h-[24rem] w-[24rem] rounded-full bg-indigo-600/20 blur-3xl"
+        style={{ animation: "drift 14s ease-in-out infinite" }}
+      />
+
+      <Starfield />
+
+      <header className="relative z-10 px-4 pt-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full bg-neutral-900/70 px-4 py-2 ring-1 ring-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-2.5">
+            <CronixMark />
+            <span className="font-display text-lg font-bold tracking-tight">
+              Cronix
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="group inline-flex items-center gap-2 rounded-full border border-transparent bg-gradient-to-r from-purple-600 to-fuchsia-500 px-5 py-1.5 text-sm font-semibold text-white shadow-[0_0_24px_-6px_rgba(168,85,247,0.7)] transition hover:shadow-[0_0_32px_-2px_rgba(168,85,247,0.9)] active:translate-y-px"
+            >
+              <span>Go to dashboard</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4 transition group-hover:translate-x-0.5"
+                aria-hidden
+              >
+                <path d="M5 12h14" />
+                <path d="m13 5 7 7-7 7" />
+              </svg>
+            </Link>
+            <ConnectWalletButton />
+          </div>
         </div>
       </header>
 
-      <HudPanel
-        title="How it works"
-        subtitle="Clear flow from start to payout"
-        accent="cyan"
-      >
-        <ol className="grid gap-4 md:grid-cols-2">
-          {flowSteps.map((step, i) => (
-            <li
-              key={step.title}
-              className="relative flex gap-3 rounded-lg border border-hud-stroke bg-white p-4"
-            >
-              <span className="font-display text-2xl font-bold text-hud-cyan">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <p className="font-display text-sm font-semibold text-foreground">
-                  {step.title}
-                </p>
-                <p className="mt-1 text-sm text-hud-dim">{step.detail}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-        <div
-          className="mt-6 hidden items-center justify-between text-hud-dim md:flex"
-          aria-hidden
-        >
-          {flowSteps.map((_, i) => (
-            <span key={i} className="flex-1 text-center text-xs">
-              {i < flowSteps.length - 1 ? "↓" : "●"}
-            </span>
-          ))}
-        </div>
-      </HudPanel>
+      <section className="relative z-10 grid min-h-[calc(100vh-120px)] place-items-center px-4 py-12">
+        <div className="flex flex-col items-center gap-10 text-center">
+          <div className="relative grid place-items-center">
+            <Planet3D />
+            <div className="pointer-events-none absolute -inset-x-24 -bottom-10 h-24 bg-gradient-to-t from-black via-black/70 to-transparent" />
+          </div>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-hud-stroke bg-white p-4">
-          <h3 className="font-display text-sm font-semibold text-foreground">
-            Treasury
-          </h3>
-          <p className="mt-2 text-sm text-hud-dim">
-            Deposits fund deployment and liquidity operations — not parked in the
-            payout wallet.
-          </p>
-        </div>
-        <div className="rounded-xl border border-hud-stroke bg-white p-4">
-          <h3 className="font-display text-sm font-semibold text-foreground">
-            Payouts
-          </h3>
-          <p className="mt-2 text-sm text-hud-dim">
-            Separate payout wallet receives monthly liquidity for user
-            withdrawals on schedule.
-          </p>
-        </div>
-        <div className="rounded-xl border border-hud-stroke bg-white p-4">
-          <h3 className="font-display text-sm font-semibold text-foreground">
-            Wallets
-          </h3>
-          <p className="mt-2 text-sm text-hud-dim">
-            MetaMask and Trust Wallet supported via standard injected connectors on
-            BSC.
-          </p>
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-[0.4em] text-purple-300/80">
+              Network growth on BNB Smart Chain
+            </p>
+            <h1
+              className="font-display text-5xl font-bold tracking-tight text-white sm:text-6xl md:text-7xl"
+              style={{
+                textShadow:
+                  "0 0 30px rgba(168,85,247,0.45), 0 0 60px rgba(168,85,247,0.2)",
+              }}
+            >
+              Cronix
+            </h1>
+            <p className="max-w-xl text-sm text-white/65 sm:text-base">
+              ROI, referrals, and cycles — orbiting a treasury you can audit on
+              chain.
+            </p>
+          </div>
         </div>
       </section>
     </main>

@@ -11,7 +11,6 @@ import {
 import { bsc, bscTestnet } from "wagmi/chains";
 import { erc20Abi, isAddress, parseUnits } from "viem";
 import { depositContractAbi } from "@/lib/contracts/depositAbi";
-import type { PackageTier } from "@/lib/types/dashboard";
 
 const bscChainIds: number[] = [bsc.id, bscTestnet.id];
 
@@ -29,7 +28,7 @@ export function parseDepositAddress(
 
 export function useUsdtDeposit(
   depositAddress: `0x${string}` | undefined,
-  selectedPackage: PackageTier | null,
+  amountUsdt: number | null,
 ) {
   const { address, isConnected, chainId } = useAccount();
   const isCorrectChain =
@@ -68,9 +67,11 @@ export function useUsdtDeposit(
   });
 
   const amount = useMemo(() => {
-    if (selectedPackage == null || decimals === undefined) return undefined;
-    return parseUnits(String(selectedPackage), decimals);
-  }, [selectedPackage, decimals]);
+    if (amountUsdt == null || amountUsdt <= 0 || decimals === undefined) {
+      return undefined;
+    }
+    return parseUnits(String(amountUsdt), decimals);
+  }, [amountUsdt, decimals]);
 
   const {
     data: allowance,
@@ -246,13 +247,15 @@ export function useUsdtDeposit(
     depositSimError?.message ??
     null;
 
+  const hasAmount = amountUsdt != null && amountUsdt > 0;
+
   const approveDisabled =
     isBusy ||
     !needsApprove ||
     !approveSimulation?.request ||
     isAllowanceFetching ||
     isApproveSimFetching ||
-    !selectedPackage;
+    !hasAmount;
 
   const depositDisabled =
     isBusy ||
@@ -262,7 +265,7 @@ export function useUsdtDeposit(
     isAllowanceFetching ||
     isBalanceFetching ||
     isDepositSimFetching ||
-    !selectedPackage;
+    !hasAmount;
 
   return {
     isConfigured: Boolean(depositAddress),

@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAccount } from "wagmi";
 import { WalletBar } from "@/components/hud/WalletBar";
 
 const links = [
   { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/team", label: "Team" },
   { href: "/dashboard/withdrawals", label: "Withdrawals" },
 ];
 
@@ -12,24 +16,43 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const { isConnected } = useAccount();
+
+  useEffect(() => {
+    if (!isConnected) router.push("/");
+  }, [isConnected, router]);
+
   return (
-    <div className="min-h-screen pb-8">
-      <WalletBar />
-      <nav className="border-b border-hud-stroke bg-white px-4 py-2">
-        <ul className="mx-auto flex max-w-6xl flex-wrap gap-2">
-          {links.map((l) => (
-            <li key={l.href}>
-              <Link
-                href={l.href}
-                className="block rounded-md border border-transparent px-3 py-1.5 text-sm font-medium text-hud-dim hover:border-hud-cyan/20 hover:text-hud-cyan"
-              >
-                {l.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      {children}
+    <div className="relative min-h-screen overflow-hidden pb-12">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-32 top-10 h-[28rem] w-[28rem] rounded-full bg-purple-600/25 blur-3xl animate-float-orb"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-40 top-1/2 h-[32rem] w-[32rem] rounded-full bg-fuchsia-600/15 blur-3xl animate-float-orb"
+        style={{ animationDelay: "-6s" }}
+      />
+
+      <div className="relative">
+        <WalletBar />
+        <nav className="border-b border-white/5 bg-white/[0.02] px-4 py-2 backdrop-blur-xl">
+          <ul className="mx-auto flex max-w-6xl flex-wrap gap-1">
+            {links.map((l) => (
+              <li key={l.href}>
+                <Link
+                  href={l.href}
+                  className="block rounded-full border border-transparent px-4 py-1.5 text-sm font-medium text-white/65 transition hover:border-purple-400/30 hover:bg-white/5 hover:text-white"
+                >
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        {children}
+      </div>
     </div>
   );
 }

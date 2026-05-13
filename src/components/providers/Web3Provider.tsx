@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { WagmiProvider } from "wagmi";
 import { wagmiConfig } from "@/lib/wagmi";
+import "@/lib/appkit";
 import { AuthProvider } from "@/hooks/useAuth";
 
 export function Web3Provider({ children }: { children: ReactNode }) {
