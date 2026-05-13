@@ -36,7 +36,7 @@ export default function TeamPage() {
 
       <HudPanel title="Frontline and depth" accent="magenta">
         <div className="space-y-3">
-          {d.teamPreview.map((m) => (
+          {(d.teamPreview ?? []).map((m) => (
             <div
               key={m.address}
               className="relative border-l-2 border-purple-500/30 pl-4"

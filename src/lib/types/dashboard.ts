@@ -6,6 +6,14 @@ export type DashboardSlabView = {
   label: string;
 };
 
+export type TeamMember = {
+  address: string;
+  depth: number;
+  packageUsdt: number;
+};
+
+export type PackageTier = number;
+
 export type Dashboard = {
   // referral / identity
   walletAddress: string;
@@ -49,6 +57,9 @@ export type Dashboard = {
   withdrawalWindowOpen: boolean;
   withdrawalWindowOpenNow: boolean;
   withdrawalWindowNote: string;
+
+  // team tree preview
+  teamPreview?: TeamMember[];
 };
 
 /** @deprecated Use `Dashboard`. Kept temporarily for mock-dashboard.ts compatibility. */
