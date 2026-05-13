@@ -1,24 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 
 function CronixMark() {
   return (
-    <span className="grid h-8 w-8 place-items-center rounded-full bg-black ring-1 ring-white/10">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        className="h-5 w-5 text-white"
-        aria-hidden
-      >
-        <ellipse cx="12" cy="12" rx="8.5" ry="3.5" transform="rotate(-20 12 12)" />
-        <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
-      </svg>
+    <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-black ring-1 ring-white/15">
+      <img
+        src="https://cronix-dashboard.vercel.app/projectIcon.svg"
+        alt="Cronix"
+        className="h-6 w-6 object-contain"
+      />
     </span>
   );
 }
@@ -184,6 +179,19 @@ function Planet3D() {
 }
 
 export default function Home() {
+  const { isConnected } = useAccount();
+  const router = useRouter();
+  const [connectNotice, setConnectNotice] = useState("");
+
+  const handleDashboardClick = () => {
+    if (!isConnected) {
+      setConnectNotice("Please connect wallet first");
+      return;
+    }
+    setConnectNotice("");
+    router.push("/dashboard");
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       {/* deep-space gradients */}
@@ -223,8 +231,9 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
+            <button
+              type="button"
+              onClick={handleDashboardClick}
               className="group inline-flex items-center gap-2 rounded-full border border-transparent bg-gradient-to-r from-purple-600 to-fuchsia-500 px-5 py-1.5 text-sm font-semibold text-white shadow-[0_0_24px_-6px_rgba(168,85,247,0.7)] transition hover:shadow-[0_0_32px_-2px_rgba(168,85,247,0.9)] active:translate-y-px"
             >
               <span>Go to dashboard</span>
@@ -241,25 +250,25 @@ export default function Home() {
                 <path d="M5 12h14" />
                 <path d="m13 5 7 7-7 7" />
               </svg>
-            </Link>
+            </button>
             <ConnectWalletButton />
           </div>
         </div>
+        {connectNotice ? (
+          <p className="mx-auto mt-3 max-w-6xl text-right text-sm text-amber-300">
+            {connectNotice}
+          </p>
+        ) : null}
       </header>
 
-      <section className="relative z-10 grid min-h-[calc(100vh-120px)] place-items-center px-4 py-12">
-        <div className="flex flex-col items-center gap-10 text-center">
-          <div className="relative grid place-items-center">
-            <Planet3D />
-            <div className="pointer-events-none absolute -inset-x-24 -bottom-10 h-24 bg-gradient-to-t from-black via-black/70 to-transparent" />
-          </div>
-
+      <section className="relative z-10 grid min-h-[calc(100vh-120px)] place-items-center px-4 py-8 sm:py-10">
+        <div className="flex flex-col items-center gap-6 text-center sm:gap-8">
           <div className="space-y-3">
             <p className="text-xs uppercase tracking-[0.4em] text-purple-300/80">
               Network growth on BNB Smart Chain
             </p>
             <h1
-              className="font-display text-5xl font-bold tracking-tight text-white sm:text-6xl md:text-7xl"
+              className="font-display text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl"
               style={{
                 textShadow:
                   "0 0 30px rgba(168,85,247,0.45), 0 0 60px rgba(168,85,247,0.2)",
@@ -271,6 +280,13 @@ export default function Home() {
               ROI, referrals, and cycles — orbiting a treasury you can audit on
               chain.
             </p>
+          </div>
+
+          <div className="relative grid place-items-center">
+            <div className="scale-[0.82] sm:scale-[0.9] md:scale-100">
+              <Planet3D />
+            </div>
+            <div className="pointer-events-none absolute -inset-x-24 -bottom-10 h-24 bg-gradient-to-t from-black via-black/70 to-transparent" />
           </div>
         </div>
       </section>
