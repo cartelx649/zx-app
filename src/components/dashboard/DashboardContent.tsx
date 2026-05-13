@@ -10,18 +10,20 @@ import { HudProgress } from "@/components/hud/HudProgress";
 import { InvestmentsSection } from "@/components/dashboard/InvestmentsSection";
 import { IncomeSection } from "@/components/dashboard/IncomeSection";
 import { useDashboard } from "@/hooks/useDashboard";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type SignInStatus } from "@/hooks/useAuth";
 
 const DASH = "—";
 
 function StatusBadge({
   isConnected,
   hasToken,
+  signInStatus,
   isFetching,
   error,
 }: {
   isConnected: boolean;
   hasToken: boolean;
+  signInStatus: SignInStatus;
   isFetching: boolean;
   error: string | null;
 }) {
@@ -34,9 +36,23 @@ function StatusBadge({
     dot = "bg-amber-400";
     cls = "border-amber-400/30 bg-amber-500/10 text-amber-300";
   } else if (!hasToken) {
-    label = "Signing in…";
-    dot = "bg-amber-400 animate-pulse";
-    cls = "border-amber-400/30 bg-amber-500/10 text-amber-300";
+    if (signInStatus === "preparing") {
+      label = "Waking server…";
+      dot = "bg-amber-400 animate-pulse";
+      cls = "border-amber-400/30 bg-amber-500/10 text-amber-300";
+    } else if (signInStatus === "awaitingSignature") {
+      label = "Approve in wallet";
+      dot = "bg-cyan-400 animate-pulse";
+      cls = "border-cyan-400/30 bg-cyan-500/10 text-cyan-200";
+    } else if (signInStatus === "verifying") {
+      label = "Verifying…";
+      dot = "bg-cyan-400 animate-pulse";
+      cls = "border-cyan-400/30 bg-cyan-500/10 text-cyan-200";
+    } else {
+      label = "Signing in…";
+      dot = "bg-amber-400 animate-pulse";
+      cls = "border-amber-400/30 bg-amber-500/10 text-amber-300";
+    }
   } else if (error) {
     label = "Error";
     dot = "bg-red-400";
@@ -60,7 +76,7 @@ function StatusBadge({
 export function DashboardContent() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
-  const { token } = useAuth();
+  const { token, signInStatus } = useAuth();
   const {
     data: d,
     isLoading,
@@ -97,6 +113,7 @@ export function DashboardContent() {
           <StatusBadge
             isConnected={isConnected}
             hasToken={Boolean(token)}
+            signInStatus={signInStatus}
             isFetching={isFetching}
             error={error}
           />

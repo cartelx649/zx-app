@@ -7,7 +7,8 @@ import { useSwitchChain } from "wagmi";
 import { bsc } from "wagmi/chains";
 import { HudButton } from "@/components/hud/HudButton";
 import { useUsdtDeposit } from "@/hooks/useUsdtDeposit";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, readStoredSponsor } from "@/hooks/useAuth";
+import { useDashboard } from "@/hooks/useDashboard";
 import { api } from "@/lib/api";
 import type { PackageTier } from "@/lib/types/dashboard";
 
@@ -64,6 +65,7 @@ export function DepositModal({
   const d = useUsdtDeposit(depositAddress, selectedPackage);
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const { token } = useAuth();
+  const { data: dashboard } = useDashboard();
 
   const [mounted, setMounted] = useState(false);
   const [lastAction, setLastAction] = useState<ActionKind>(null);
@@ -120,8 +122,14 @@ export function DepositModal({
     verifiedRef.current = txHash;
     setVerifyState("pending");
     setVerifyError(null);
+    const adminWallet = process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS ?? "";
+    const sponsorWalletAddress =
+      readStoredSponsor() || dashboard?.sponsorAddress || adminWallet;
     api
-      .verifyDeposit({ txHash, amount: selectedPackage }, token)
+      .verifyDeposit(
+        { txHash, amount: selectedPackage, sponsorWalletAddress },
+        token,
+      )
       .then(() => {
         setVerifyState("done");
         const t = setTimeout(() => onClose(), 2000);
@@ -133,7 +141,13 @@ export function DepositModal({
           e instanceof Error ? e.message : "Backend verification failed.",
         );
       });
-  }, [d.lastDepositTxHash, onClose, selectedPackage, token]);
+  }, [
+    d.lastDepositTxHash,
+    onClose,
+    selectedPackage,
+    token,
+    dashboard?.sponsorAddress,
+  ]);
 
   const handleApprove = async () => {
     setLastAction("approve");

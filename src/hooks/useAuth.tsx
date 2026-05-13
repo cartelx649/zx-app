@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useAccount, useSignMessage } from "wagmi";
+import { useAccount, useConnectorClient, useSignMessage } from "wagmi";
 import { isAddress } from "viem";
 import { api, extractToken, NONCE_MESSAGE_PREFIX } from "@/lib/api";
 
@@ -18,13 +18,21 @@ const TOKEN_STORAGE_KEY = "zx.auth.token";
 const TOKEN_ADDRESS_KEY = "zx.auth.address";
 export const SPONSOR_STORAGE_KEY = "zx.sponsorWalletAddress";
 
+export type SignInStatus =
+  | "idle"
+  | "preparing"
+  | "awaitingSignature"
+  | "verifying";
+
 type AuthState = {
   token: string | null;
   isAuthenticated: boolean;
   isAuthenticating: boolean;
+  signInStatus: SignInStatus;
   error: string | null;
   signIn: () => Promise<void>;
   signOut: () => void;
+  clearTokenForReauth: () => void;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -98,19 +106,41 @@ function clearStoredToken() {
   }
 }
 
+function isConnectorNotConnectedError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e ?? "");
+  return /connector\s+not\s+connected/i.test(msg);
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+const CONNECTOR_RETRY_BACKOFF_MS = [150, 400, 900, 1800] as const;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, status } = useAccount();
   const { signMessageAsync } = useSignMessage();
+  const { data: connectorClient } = useConnectorClient({
+    query: { enabled: status === "connected" && Boolean(address) },
+  });
 
   const [token, setToken] = useState<string | null>(null);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [signInStatus, setSignInStatus] = useState<SignInStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const autoAttemptedForAddress = useRef<string | null>(null);
+  const isAuthenticating = signInStatus !== "idle";
 
   // Capture sponsor address from URL (?sponsor=0x... or ?ref=0x...) once per mount.
   useEffect(() => {
     const fromUrl = readSponsorFromUrl();
     if (fromUrl) persistSponsor(fromUrl);
+  }, []);
+
+  // Pre-warm the backend so the first nonce request after wallet connect
+  // doesn't hit a 20–30s Render cold start (which makes the wallet popup
+  // appear to never come).
+  useEffect(() => {
+    void api.health().catch(() => {});
   }, []);
 
   // Rehydrate token when the connected address changes; clear if mismatch/disconnect.
@@ -129,14 +159,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError("Connect a wallet before signing in.");
       return;
     }
+    if (status !== "connected" || !connectorClient) {
+      setError("Wallet not ready — try again in a moment.");
+      return;
+    }
     autoAttemptedForAddress.current = address;
-    setIsAuthenticating(true);
+    setSignInStatus("preparing");
     setError(null);
     try {
       const { nonce } = await api.requestNonce(address);
       const message = `${NONCE_MESSAGE_PREFIX}${nonce}`;
-      const signature = await signMessageAsync({ message });
+      setSignInStatus("awaitingSignature");
+
+      // wagmi can intermittently throw "Connector not connected" right after
+      // the AppKit modal closes / on page reload while the underlying
+      // provider finishes hydrating. Retry with exponential backoff before
+      // surfacing the error to the user.
+      let signature: `0x${string}` | undefined;
+      let lastErr: unknown;
+      for (let i = 0; i <= CONNECTOR_RETRY_BACKOFF_MS.length; i++) {
+        try {
+          signature = await signMessageAsync({ message });
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (!isConnectorNotConnectedError(e)) throw e;
+          if (i === CONNECTOR_RETRY_BACKOFF_MS.length) throw e;
+          await sleep(CONNECTOR_RETRY_BACKOFF_MS[i]);
+        }
+      }
+      if (!signature) {
+        throw lastErr instanceof Error
+          ? lastErr
+          : new Error("Wallet not ready to sign.");
+      }
+
       const sponsor = readStoredSponsor();
+      setSignInStatus("verifying");
       const resp = await api.login({
         walletAddress: address,
         signature,
@@ -150,11 +209,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(jwt);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Sign-in failed";
-      setError(msg);
+      // If we exhausted retries on a connector race, let the auto-signIn
+      // effect refire as soon as the connector client lands instead of
+      // wedging the UI on an "error" state.
+      if (isConnectorNotConnectedError(e)) {
+        autoAttemptedForAddress.current = null;
+      } else {
+        setError(msg);
+      }
     } finally {
-      setIsAuthenticating(false);
+      setSignInStatus("idle");
     }
-  }, [address, isConnected, signMessageAsync]);
+  }, [address, isConnected, status, connectorClient, signMessageAsync]);
 
   const signOut = useCallback(() => {
     clearStoredToken();
@@ -163,26 +229,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     autoAttemptedForAddress.current = null;
   }, []);
 
+  // Drop a stale/rejected token and re-arm the auto-signIn effect so it
+  // refires for the currently connected address.
+  const clearTokenForReauth = useCallback(() => {
+    clearStoredToken();
+    setToken(null);
+    setError(null);
+    autoAttemptedForAddress.current = null;
+  }, []);
+
   // Auto-trigger sign-in once per address when wallet is connected and no token exists.
+  // Gate on BOTH status === "connected" AND a hydrated connectorClient so we
+  // don't call signMessageAsync before the underlying provider is ready
+  // (which throws "Connector not connected" from @wagmi/core).
   useEffect(() => {
+    if (status !== "connected") return;
+    if (!connectorClient) return;
     if (!isConnected || !address) return;
     if (token) return;
-    if (isAuthenticating) return;
+    if (signInStatus !== "idle") return;
     if (error) return;
     if (autoAttemptedForAddress.current === address) return;
     void signIn();
-  }, [address, isConnected, token, isAuthenticating, error, signIn]);
+  }, [
+    address,
+    isConnected,
+    status,
+    connectorClient,
+    token,
+    signInStatus,
+    error,
+    signIn,
+  ]);
 
   const value = useMemo<AuthState>(
     () => ({
       token,
       isAuthenticated: Boolean(token),
       isAuthenticating,
+      signInStatus,
       error,
       signIn,
       signOut,
+      clearTokenForReauth,
     }),
-    [token, isAuthenticating, error, signIn, signOut],
+    [
+      token,
+      isAuthenticating,
+      signInStatus,
+      error,
+      signIn,
+      signOut,
+      clearTokenForReauth,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

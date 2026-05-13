@@ -136,8 +136,14 @@ export function DepositForm() {
     verifiedRef.current = txHash;
     setVerifyState("pending");
     setVerifyError(null);
+    const adminWallet = process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS ?? "";
+    const sponsorWalletAddress =
+      sponsor || dashboard?.sponsorAddress || adminWallet;
     api
-      .verifyDeposit({ txHash, amount: amountUsdt }, token)
+      .verifyDeposit(
+        { txHash, amount: amountUsdt, sponsorWalletAddress },
+        token,
+      )
       .then(() => {
         setVerifyState("done");
         void refetchDashboard();
@@ -148,7 +154,14 @@ export function DepositForm() {
           e instanceof Error ? e.message : "Backend verification failed.",
         );
       });
-  }, [d.lastDepositTxHash, amountUsdt, token, refetchDashboard]);
+  }, [
+    d.lastDepositTxHash,
+    amountUsdt,
+    token,
+    refetchDashboard,
+    sponsor,
+    dashboard?.sponsorAddress,
+  ]);
 
   const handleApprove = async () => {
     setLastAction("approve");

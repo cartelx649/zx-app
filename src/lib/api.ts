@@ -17,7 +17,10 @@ type FetchOptions = Omit<RequestInit, "body"> & {
   token?: string | null;
   idempotencyKey?: string;
   json?: unknown;
+  timeoutMs?: number;
 };
+
+const DEFAULT_TIMEOUT_MS = 45_000;
 
 export class ApiError extends Error {
   status: number;
@@ -36,9 +39,15 @@ function randomIdempotencyKey(): string {
 }
 
 async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
-  const { token, idempotencyKey, json, headers, ...rest } = opts;
+  const { token, idempotencyKey, json, headers, timeoutMs, ...rest } = opts;
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(),
+    timeoutMs ?? DEFAULT_TIMEOUT_MS,
+  );
   const init: RequestInit = {
     ...rest,
+    signal: controller.signal,
     headers: {
       ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -52,10 +61,15 @@ async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
   try {
     res = await fetch(`${API_BASE}${path}`, init);
   } catch (e) {
+    if (controller.signal.aborted) {
+      throw new ApiError("Server timed out — try again", 0);
+    }
     throw new ApiError(
       e instanceof Error ? e.message : "Network request failed",
       0,
     );
+  } finally {
+    clearTimeout(timer);
   }
 
   let body: ApiEnvelope<T> | null = null;
@@ -83,7 +97,11 @@ export type LoginResponse = {
   user?: Record<string, unknown>;
 } & Record<string, unknown>;
 
-export type VerifyDepositArgs = { txHash: string; amount: number };
+export type VerifyDepositArgs = {
+  txHash: string;
+  amount: number;
+  sponsorWalletAddress: string;
+};
 
 export type DashboardSlab = {
   name: string;

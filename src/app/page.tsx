@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
+import { useAuth } from "@/hooks/useAuth";
 
 function CronixMark() {
   return (
@@ -180,14 +181,49 @@ function Planet3D() {
   );
 }
 
+function signInStatusLabel(status: ReturnType<typeof useAuth>["signInStatus"]) {
+  if (status === "preparing") return "Waking server…";
+  if (status === "awaitingSignature") return "Approve in wallet";
+  if (status === "verifying") return "Verifying…";
+  return null;
+}
+
 export default function Home() {
   const { isConnected } = useAccount();
+  const {
+    isAuthenticated,
+    isAuthenticating,
+    signInStatus,
+    error: authError,
+  } = useAuth();
   const router = useRouter();
   const [connectNotice, setConnectNotice] = useState("");
+
+  const statusLabel = signInStatusLabel(signInStatus);
+  const buttonLabel =
+    isConnected && !isAuthenticated && statusLabel
+      ? statusLabel
+      : "Go to dashboard";
 
   const handleDashboardClick = () => {
     if (!isConnected) {
       setConnectNotice("Please connect wallet first");
+      return;
+    }
+    if (!isAuthenticated) {
+      if (statusLabel) {
+        const hint =
+          signInStatus === "awaitingSignature"
+            ? " — please approve the wallet prompt."
+            : signInStatus === "preparing"
+              ? " — backend is warming up, hold tight."
+              : "…";
+        setConnectNotice(`${statusLabel}${hint}`);
+      } else if (authError) {
+        setConnectNotice(authError);
+      } else {
+        setConnectNotice("Signing in…");
+      }
       return;
     }
     setConnectNotice("");
@@ -236,9 +272,10 @@ export default function Home() {
             <button
               type="button"
               onClick={handleDashboardClick}
-              className="group inline-flex items-center gap-2 rounded-full border border-transparent bg-gradient-to-r from-purple-600 to-fuchsia-500 px-5 py-1.5 text-sm font-semibold text-white shadow-[0_0_24px_-6px_rgba(168,85,247,0.7)] transition hover:shadow-[0_0_32px_-2px_rgba(168,85,247,0.9)] active:translate-y-px"
+              disabled={isConnected && !isAuthenticated && isAuthenticating}
+              className="group inline-flex items-center gap-2 rounded-full border border-transparent bg-gradient-to-r from-purple-600 to-fuchsia-500 px-5 py-1.5 text-sm font-semibold text-white shadow-[0_0_24px_-6px_rgba(168,85,247,0.7)] transition hover:shadow-[0_0_32px_-2px_rgba(168,85,247,0.9)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
             >
-              <span>Go to dashboard</span>
+              <span>{buttonLabel}</span>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"

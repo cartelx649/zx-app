@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
-import { api, type DashboardApi } from "@/lib/api";
+import { api, ApiError, type DashboardApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import type { Dashboard } from "@/lib/types/dashboard";
 
@@ -151,7 +152,7 @@ export type DashboardWithdrawalRow = {
 };
 
 export function useDashboard() {
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, clearTokenForReauth } = useAuth();
   const { address } = useAccount();
 
   const enabled = Boolean(isAuthenticated && token);
@@ -164,6 +165,30 @@ export function useDashboard() {
     refetchOnWindowFocus: true,
   });
 
+  // Treat a 401 as "this token is stale" — evict it once and let the auth
+  // provider's auto-signIn effect fire a fresh nonce/sign round. The ref
+  // pins the token we already tried clearing so a backend that genuinely
+  // 401s a freshly-issued token doesn't trap us in a sign/fail loop.
+  const lastBad401TokenRef = useRef<string | null>(null);
+  const queryError = dashboardQuery.error;
+  const isStale401 =
+    queryError instanceof ApiError &&
+    queryError.status === 401 &&
+    Boolean(token) &&
+    lastBad401TokenRef.current !== token;
+
+  useEffect(() => {
+    if (!isStale401) return;
+    lastBad401TokenRef.current = token;
+    clearTokenForReauth();
+  }, [isStale401, token, clearTokenForReauth]);
+
+  useEffect(() => {
+    if (dashboardQuery.isSuccess) {
+      lastBad401TokenRef.current = null;
+    }
+  }, [dashboardQuery.isSuccess]);
+
   const adapted = adapt(
     dashboardQuery.data,
     address as `0x${string}` | undefined,
@@ -175,6 +200,9 @@ export function useDashboard() {
     ? (dashboardQuery.data!.withdrawals!.history as DashboardWithdrawalRow[])
     : [];
 
+  const is401 =
+    queryError instanceof ApiError && queryError.status === 401;
+
   return {
     data: adapted,
     withdrawals,
@@ -182,9 +210,11 @@ export function useDashboard() {
     isLoading: dashboardQuery.isLoading,
     isFetching: dashboardQuery.isFetching,
     error:
-      dashboardQuery.error instanceof Error
-        ? dashboardQuery.error.message
-        : null,
+      is401
+        ? null
+        : queryError instanceof Error
+          ? queryError.message
+          : null,
     refetch: async () => {
       await dashboardQuery.refetch();
     },

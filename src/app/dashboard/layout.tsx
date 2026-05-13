@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAccount } from "wagmi";
 import { WalletBar } from "@/components/hud/WalletBar";
+import { useAuth } from "@/hooks/useAuth";
 
 const links = [
   { href: "/dashboard", label: "Overview" },
@@ -18,10 +19,13 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { isConnected } = useAccount();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!isConnected) router.push("/");
-  }, [isConnected, router]);
+    if (!isConnected || !isAuthenticated) router.replace("/");
+  }, [isConnected, isAuthenticated, router]);
+
+  if (!isConnected || !isAuthenticated) return null;
 
   return (
     <div className="relative min-h-screen overflow-hidden pb-12">
