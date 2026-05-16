@@ -9,9 +9,30 @@ export const NONCE_MESSAGE_PREFIX = "ZX Login Nonce: ";
 type ApiEnvelope<T> = {
   ok: boolean;
   data?: T;
-  error?: string;
+  error?: string | Record<string, unknown>;
   message?: string;
 };
+
+function extractApiErrorMessage(
+  body: ApiEnvelope<unknown> | null,
+  status: number,
+): string {
+  if (body) {
+    const raw = body.error ?? body.message;
+    if (typeof raw === "string" && raw.trim()) return raw;
+    if (raw && typeof raw === "object") {
+      const obj = raw as Record<string, unknown>;
+      const nested = obj.message ?? obj.error ?? obj.detail;
+      if (typeof nested === "string" && nested.trim()) return nested;
+      try {
+        return JSON.stringify(raw);
+      } catch {
+        /* fall through */
+      }
+    }
+  }
+  return `Request failed (${status})`;
+}
 
 type FetchOptions = Omit<RequestInit, "body"> & {
   token?: string | null;
@@ -80,9 +101,7 @@ async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
   }
 
   if (!res.ok || (body && body.ok === false)) {
-    const msg =
-      (body && (body.error ?? body.message)) ?? `Request failed (${res.status})`;
-    throw new ApiError(msg, res.status);
+    throw new ApiError(extractApiErrorMessage(body, res.status), res.status);
   }
 
   return (body?.data ?? (body as unknown)) as T;

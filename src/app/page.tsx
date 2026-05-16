@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { useAuth } from "@/hooks/useAuth";
@@ -195,7 +195,10 @@ export default function Home() {
     isAuthenticating,
     signInStatus,
     error: authError,
+    signIn,
+    clearTokenForReauth,
   } = useAuth();
+  const { open } = useAppKit();
   const router = useRouter();
   const [connectNotice, setConnectNotice] = useState("");
 
@@ -205,24 +208,50 @@ export default function Home() {
       ? statusLabel
       : "Go to dashboard";
 
-  const handleDashboardClick = () => {
+  // Mirror auth errors into the visible notice so a failed signIn surfaces
+  // without callers having to set it inline.
+  useEffect(() => {
+    if (authError) setConnectNotice(authError);
+  }, [authError]);
+
+  // Clear the "wallet not connected" notice the moment a wallet connects.
+  useEffect(() => {
+    if (isConnected) {
+      setConnectNotice((prev) =>
+        prev.startsWith("Wallet not connected") ? "" : prev,
+      );
+    }
+  }, [isConnected]);
+
+  // Once authenticated, auto-navigate to the dashboard.
+  useEffect(() => {
+    if (isConnected && isAuthenticated) {
+      setConnectNotice("");
+      router.push("/dashboard");
+    }
+  }, [isConnected, isAuthenticated, router]);
+
+  const handleDashboardClick = async () => {
     if (!isConnected) {
-      setConnectNotice("Please connect wallet first");
+      setConnectNotice("Wallet not connected — opening wallet…");
+      try {
+        await open();
+      } catch {
+        // user dismissed
+      }
       return;
     }
     if (!isAuthenticated) {
-      if (statusLabel) {
-        const hint =
-          signInStatus === "awaitingSignature"
-            ? " — please approve the wallet prompt."
-            : signInStatus === "preparing"
-              ? " — backend is warming up, hold tight."
-              : "…";
-        setConnectNotice(`${statusLabel}${hint}`);
-      } else if (authError) {
-        setConnectNotice(authError);
-      } else {
-        setConnectNotice("Signing in…");
+      if (authError) clearTokenForReauth();
+      setConnectNotice(
+        signInStatus === "awaitingSignature"
+          ? "Approve the signature in your wallet…"
+          : "Signing in…",
+      );
+      try {
+        await signIn();
+      } catch {
+        // signIn surfaces the message through authError → mirrored above.
       }
       return;
     }
