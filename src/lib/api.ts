@@ -168,6 +168,12 @@ export type DashboardReferralApi = {
   joinedAt: string;
 };
 
+export type MonthlyRoiApi = {
+  monthKey: string;
+  totalRoi: number;
+  count: number;
+};
+
 export type DashboardWithdrawalWindowApi = {
   dayOfMonth: number;
   isOpen: boolean;
@@ -213,6 +219,12 @@ export const api = {
 
   getDashboard: (token: string) =>
     apiFetch<DashboardApi>("/users/dashboard", { token }),
+
+  getMonthlyRoi: (token: string, month: string) =>
+    apiFetch<MonthlyRoiApi>(
+      `/users/income/monthly-roi?month=${encodeURIComponent(month)}`,
+      { token },
+    ),
 
   health: () => apiFetch<unknown>("/health"),
 };

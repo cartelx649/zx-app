@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { RoiWithdrawCard } from "@/components/dashboard/RoiWithdrawCard";
 import { hudButtonClass } from "@/components/hud/HudButton";
 import { HudPanel } from "@/components/hud/HudPanel";
 import { useDashboard } from "@/hooks/useDashboard";
@@ -33,6 +34,8 @@ export default function WithdrawalsPage() {
           Back to overview
         </Link>
       </div>
+
+      <RoiWithdrawCard />
 
       <HudPanel
         title="Withdrawal window"
