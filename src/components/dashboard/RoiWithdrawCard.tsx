@@ -1,18 +1,40 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { HudButton } from "@/components/hud/HudButton";
 import { HudPanel } from "@/components/hud/HudPanel";
 import { useAuth } from "@/hooks/useAuth";
-import { ApiError, api } from "@/lib/api";
+import { useDashboard } from "@/hooks/useDashboard";
+import { ApiError, api, type WithdrawalContractApi } from "@/lib/api";
 
 // Hardcoded for now — wire up to the active month once the backend supports it.
 const MONTH = "2026-05";
 
+const ERROR_MESSAGES: Record<string, string> = {
+  USER_INACTIVE: "Your account is not active.",
+  INVALID_INCOME_TYPE: "Invalid withdrawal type.",
+  WALLET_MISMATCH: "Wallet address does not match your account.",
+  NO_ACTIVE_CYCLE: "You have no active cycle.",
+  ROI_MONTH_ALREADY_WITHDRAWN: "ROI for this month is already withdrawn.",
+  NO_ROI_FOR_MONTH: "No ROI available for this month.",
+  AMOUNT_EXCEEDS_ROI: "Amount exceeds your available ROI.",
+  CAP_REACHED: "Income cap reached. Please re-topup.",
+  DUPLICATE_REQUEST: "Request already in progress. Please wait.",
+};
+
+type WithdrawState = "idle" | "pending" | "done" | "error";
+
 export function RoiWithdrawCard() {
   const { token, isAuthenticated } = useAuth();
+  const { data: dashboard, refetch: refetchDashboard } = useDashboard();
 
-  const { data, isLoading, error } = useQuery({
+  const {
+    data,
+    isLoading,
+    error,
+    refetch: refetchRoi,
+  } = useQuery({
     queryKey: ["monthly-roi", MONTH, Boolean(token)],
     enabled: Boolean(isAuthenticated && token),
     queryFn: () => api.getMonthlyRoi(token!, MONTH),
@@ -27,12 +49,61 @@ export function RoiWithdrawCard() {
 
   const totalRoi = data?.totalRoi ?? 0;
   const count = data?.count ?? 0;
+  const walletAddress = dashboard.walletAddress;
 
-  // The withdrawal endpoint isn't ready yet — keep the button as a disabled
-  // placeholder. When the API lands, enable it for `totalRoi > 0` and wire onClick.
-  const withdrawReady = false;
+  const [withdrawState, setWithdrawState] = useState<WithdrawState>("idle");
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [withdrawResult, setWithdrawResult] =
+    useState<WithdrawalContractApi | null>(null);
+
+  // Stable per (wallet, month): retrying a failed attempt reuses the same key,
+  // so a request that actually succeeded server-side can't double-pay.
+  const idempotencyKey = useMemo(
+    () => `${walletAddress}-${MONTH}-roi`,
+    [walletAddress],
+  );
+
   const canWithdraw =
-    withdrawReady && !isLoading && !errorMessage && totalRoi > 0;
+    !isLoading &&
+    !errorMessage &&
+    totalRoi > 0 &&
+    Boolean(walletAddress) &&
+    Boolean(token) &&
+    withdrawState !== "pending" &&
+    withdrawState !== "done";
+
+  async function handleWithdraw() {
+    if (!canWithdraw || !token) return;
+    setWithdrawState("pending");
+    setWithdrawError(null);
+    try {
+      const result = await api.withdrawContract(
+        { walletAddress, amount: totalRoi, type: "roi", monthKey: MONTH },
+        token,
+        idempotencyKey,
+      );
+      setWithdrawResult(result);
+      setWithdrawState("done");
+      await Promise.allSettled([refetchRoi(), refetchDashboard()]);
+    } catch (e) {
+      setWithdrawState("error");
+      if (e instanceof ApiError) {
+        if (e.status === 401) {
+          setWithdrawError("Session expired. Please log in again.");
+        } else {
+          setWithdrawError(
+            (e.code && ERROR_MESSAGES[e.code]) ||
+              e.message ||
+              "Withdrawal failed. Try again.",
+          );
+        }
+      } else {
+        setWithdrawError(
+          e instanceof Error ? e.message : "Withdrawal failed. Try again.",
+        );
+      }
+    }
+  }
 
   return (
     <HudPanel
@@ -45,25 +116,57 @@ export function RoiWithdrawCard() {
       ) : isLoading ? (
         <p className="text-sm text-white/55">Loading…</p>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs uppercase tracking-wider text-white/45">
-              Total ROI
-            </p>
-            <p className="font-mono text-2xl font-semibold text-amber-300">
-              {totalRoi.toLocaleString()} USDT
-            </p>
-            <p className="text-sm text-white/55">
-              from {count} {count === 1 ? "entry" : "entries"}
-            </p>
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs uppercase tracking-wider text-white/45">
+                Total ROI
+              </p>
+              <p className="font-mono text-2xl font-semibold text-amber-300">
+                {totalRoi.toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })}{" "}
+                USDT
+              </p>
+              <p className="text-sm text-white/55">
+                from {count} {count === 1 ? "entry" : "entries"}
+              </p>
+            </div>
+            <HudButton
+              variant="primary"
+              onClick={handleWithdraw}
+              disabled={!canWithdraw}
+              title={totalRoi > 0 ? undefined : "No ROI available to withdraw"}
+            >
+              {withdrawState === "pending" ? "Withdrawing…" : "Withdraw"}
+            </HudButton>
           </div>
-          <HudButton
-            variant="primary"
-            disabled={!canWithdraw}
-            title={withdrawReady ? undefined : "Withdrawals coming soon"}
-          >
-            Withdraw
-          </HudButton>
+
+          {withdrawState === "error" && withdrawError ? (
+            <p className="text-sm text-red-300">{withdrawError}</p>
+          ) : null}
+
+          {withdrawState === "done" && withdrawResult ? (
+            <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+              <p className="font-medium">
+                Withdrawn{" "}
+                {withdrawResult.withdrawnAmount.toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })}{" "}
+                USDT
+              </p>
+              {withdrawResult.txHash ? (
+                <a
+                  href={`https://bscscan.com/tx/${withdrawResult.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-block break-all text-xs text-emerald-300 underline underline-offset-2 hover:text-emerald-200"
+                >
+                  View transaction on BscScan ↗
+                </a>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
     </HudPanel>

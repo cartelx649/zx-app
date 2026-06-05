@@ -45,11 +45,24 @@ const DEFAULT_TIMEOUT_MS = 45_000;
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
     this.name = "ApiError";
   }
+}
+
+function extractApiErrorCode(
+  body: ApiEnvelope<unknown> | null,
+): string | undefined {
+  const raw = body?.error;
+  if (raw && typeof raw === "object") {
+    const code = (raw as Record<string, unknown>).code;
+    if (typeof code === "string" && code.trim()) return code;
+  }
+  return undefined;
 }
 
 function randomIdempotencyKey(): string {
@@ -101,7 +114,11 @@ async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
   }
 
   if (!res.ok || (body && body.ok === false)) {
-    throw new ApiError(extractApiErrorMessage(body, res.status), res.status);
+    throw new ApiError(
+      extractApiErrorMessage(body, res.status),
+      res.status,
+      extractApiErrorCode(body),
+    );
   }
 
   return (body?.data ?? (body as unknown)) as T;
@@ -174,6 +191,14 @@ export type MonthlyRoiApi = {
   count: number;
 };
 
+export type WithdrawalContractApi = {
+  monthKey: string;
+  roiTotal: number;
+  withdrawnAmount: number;
+  txHash: string;
+  withdrawal: Record<string, unknown>;
+};
+
 export type DashboardWithdrawalWindowApi = {
   dayOfMonth: number;
   isOpen: boolean;
@@ -225,6 +250,23 @@ export const api = {
       `/users/income/monthly-roi?month=${encodeURIComponent(month)}`,
       { token },
     ),
+
+  withdrawContract: (
+    args: {
+      walletAddress: string;
+      amount: number;
+      type: "roi";
+      monthKey: string;
+    },
+    token: string,
+    idempotencyKey: string,
+  ) =>
+    apiFetch<WithdrawalContractApi>("/withdrawals/contract", {
+      method: "POST",
+      token,
+      idempotencyKey,
+      json: args,
+    }),
 
   health: () => apiFetch<unknown>("/health"),
 };
