@@ -226,6 +226,47 @@ export type WithdrawalRecord = {
   updatedAt: string;
 };
 
+export type WithdrawalHistoryItem = {
+  id: string;
+  requestedAmount: number;
+  approvedAmount: number;
+  status: "pending" | "approved" | "rejected" | "paid";
+  incomeType: "roi" | "direct" | "override" | null;
+  monthKey: string | null;
+  payoutTxHash: string | null;
+  rejectionReason: string | null;
+  requestedAt: string;
+  processedAt: string | null;
+};
+
+export type WithdrawalHistorySummary = {
+  totalWithdrawn: number;
+  pendingAmount: number;
+  approvedAmount: number;
+  rejectedCount: number;
+  totalCount: number;
+};
+
+export type WithdrawalHistoryPagination = {
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+};
+
+export type WithdrawalHistoryApi = {
+  items: WithdrawalHistoryItem[];
+  summary: WithdrawalHistorySummary;
+  pagination: WithdrawalHistoryPagination;
+};
+
+export type WithdrawalHistoryParams = {
+  limit?: number;
+  offset?: number;
+  status?: "pending" | "approved" | "rejected" | "paid";
+  type?: "roi" | "direct" | "override";
+};
+
 export type WithdrawableIncomeApi = {
   monthKey: string;
   totals: {
@@ -319,6 +360,21 @@ export const api = {
       idempotencyKey,
       json: args,
     }),
+
+  getWithdrawalHistory: (
+    token: string,
+    params: WithdrawalHistoryParams = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.limit != null) qs.set("limit", String(params.limit));
+    if (params.offset != null) qs.set("offset", String(params.offset));
+    if (params.status) qs.set("status", params.status);
+    if (params.type) qs.set("type", params.type);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return apiFetch<WithdrawalHistoryApi>(`/withdrawals/history${suffix}`, {
+      token,
+    });
+  },
 
   health: () => apiFetch<unknown>("/health"),
 };

@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { LedgerPanel } from "@/components/dashboard/LedgerPanel";
 import { RoiWithdrawCard } from "@/components/dashboard/RoiWithdrawCard";
 import { WithdrawableIncomeCard } from "@/components/dashboard/WithdrawableIncomeCard";
 import { hudButtonClass } from "@/components/hud/HudButton";
 import { HudPanel } from "@/components/hud/HudPanel";
 import { useDashboard } from "@/hooks/useDashboard";
-import { statusPillClass } from "@/lib/withdrawals";
 
 export default function WithdrawalsPage() {
-  const { data, withdrawals, isLoading, error } = useDashboard();
+  const { data } = useDashboard();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -43,38 +43,7 @@ export default function WithdrawalsPage() {
         </p>
       </HudPanel>
 
-      <HudPanel title="Ledger" accent="cyan">
-        {error ? (
-          <p className="text-sm text-red-300">{error}</p>
-        ) : isLoading && withdrawals.length === 0 ? (
-          <p className="text-sm text-white/55">Loading…</p>
-        ) : withdrawals.length === 0 ? (
-          <p className="text-sm text-white/55">No withdrawals yet.</p>
-        ) : (
-          <ul className="divide-y divide-white/5">
-            {withdrawals.map((r) => (
-              <li
-                key={r.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-3"
-              >
-                <div className="flex flex-col gap-1">
-                  <p className="font-display text-sm text-white/85">
-                    {r.date}
-                  </p>
-                  <span
-                    className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusPillClass(r.status)}`}
-                  >
-                    {r.status}
-                  </span>
-                </div>
-                <p className="font-mono text-lg font-semibold text-amber-300">
-                  +{r.amountUsdt.toLocaleString()} USDT
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </HudPanel>
+      <LedgerPanel />
     </div>
   );
 }
