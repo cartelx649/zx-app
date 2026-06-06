@@ -2,19 +2,11 @@
 
 import Link from "next/link";
 import { RoiWithdrawCard } from "@/components/dashboard/RoiWithdrawCard";
+import { WithdrawableIncomeCard } from "@/components/dashboard/WithdrawableIncomeCard";
 import { hudButtonClass } from "@/components/hud/HudButton";
 import { HudPanel } from "@/components/hud/HudPanel";
 import { useDashboard } from "@/hooks/useDashboard";
-
-function statusPillClass(status: string) {
-  if (/complete|approved|paid/i.test(status))
-    return "bg-emerald-400/15 text-emerald-300 border-emerald-400/30";
-  if (/pending|process/i.test(status))
-    return "bg-amber-400/15 text-amber-300 border-amber-400/30";
-  if (/reject|fail|cancel/i.test(status))
-    return "bg-red-500/15 text-red-300 border-red-400/30";
-  return "bg-white/5 text-white/65 border-white/10";
-}
+import { statusPillClass } from "@/lib/withdrawals";
 
 export default function WithdrawalsPage() {
   const { data, withdrawals, isLoading, error } = useDashboard();
@@ -36,6 +28,8 @@ export default function WithdrawalsPage() {
       </div>
 
       <RoiWithdrawCard />
+
+      <WithdrawableIncomeCard />
 
       <HudPanel
         title="Withdrawal window"

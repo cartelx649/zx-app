@@ -7,21 +7,14 @@ import { HudPanel } from "@/components/hud/HudPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboard } from "@/hooks/useDashboard";
 import { ApiError, api, type WithdrawalContractApi } from "@/lib/api";
+import { formatUsdt, withdrawErrorMessage } from "@/lib/withdrawals";
 
 // Hardcoded for now — wire up to the active month once the backend supports it.
 const MONTH = "2026-05";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  USER_INACTIVE: "Your account is not active.",
-  INVALID_INCOME_TYPE: "Invalid withdrawal type.",
-  WALLET_MISMATCH: "Wallet address does not match your account.",
-  NO_ACTIVE_CYCLE: "You have no active cycle.",
-  ROI_MONTH_ALREADY_WITHDRAWN: "ROI for this month is already withdrawn.",
-  NO_ROI_FOR_MONTH: "No ROI available for this month.",
-  AMOUNT_EXCEEDS_ROI: "Amount exceeds your available ROI.",
-  CAP_REACHED: "Income cap reached. Please re-topup.",
-  DUPLICATE_REQUEST: "Request already in progress. Please wait.",
-};
+// Admin fee deducted by the backend on payout. Shown here for transparency only;
+// the gross amount is still sent to the backend, which performs the deduction.
+const ADMIN_FEE_RATE = 0.05;
 
 type WithdrawState = "idle" | "pending" | "done" | "error";
 
@@ -49,6 +42,8 @@ export function RoiWithdrawCard() {
 
   const totalRoi = data?.totalRoi ?? 0;
   const count = data?.count ?? 0;
+  const adminFee = totalRoi * ADMIN_FEE_RATE;
+  const netRoi = totalRoi - adminFee;
   const walletAddress = dashboard.walletAddress;
 
   const [withdrawState, setWithdrawState] = useState<WithdrawState>("idle");
@@ -87,21 +82,7 @@ export function RoiWithdrawCard() {
       await Promise.allSettled([refetchRoi(), refetchDashboard()]);
     } catch (e) {
       setWithdrawState("error");
-      if (e instanceof ApiError) {
-        if (e.status === 401) {
-          setWithdrawError("Session expired. Please log in again.");
-        } else {
-          setWithdrawError(
-            (e.code && ERROR_MESSAGES[e.code]) ||
-              e.message ||
-              "Withdrawal failed. Try again.",
-          );
-        }
-      } else {
-        setWithdrawError(
-          e instanceof Error ? e.message : "Withdrawal failed. Try again.",
-        );
-      }
+      setWithdrawError(withdrawErrorMessage(e));
     }
   }
 
@@ -123,10 +104,7 @@ export function RoiWithdrawCard() {
                 Total ROI
               </p>
               <p className="font-mono text-2xl font-semibold text-amber-300">
-                {totalRoi.toLocaleString(undefined, {
-                  maximumFractionDigits: 6,
-                })}{" "}
-                USDT
+                {formatUsdt(totalRoi)} USDT
               </p>
               <p className="text-sm text-white/55">
                 from {count} {count === 1 ? "entry" : "entries"}
@@ -142,6 +120,21 @@ export function RoiWithdrawCard() {
             </HudButton>
           </div>
 
+          {totalRoi > 0 ? (
+            <div className="space-y-1.5 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm">
+              <div className="flex items-center justify-between text-white/55">
+                <span>Admin fee (5%)</span>
+                <span className="font-mono">−{formatUsdt(adminFee)} USDT</span>
+              </div>
+              <div className="flex items-center justify-between font-medium text-white/85">
+                <span>You receive</span>
+                <span className="font-mono text-emerald-300">
+                  {formatUsdt(netRoi)} USDT
+                </span>
+              </div>
+            </div>
+          ) : null}
+
           {withdrawState === "error" && withdrawError ? (
             <p className="text-sm text-red-300">{withdrawError}</p>
           ) : null}
@@ -149,11 +142,7 @@ export function RoiWithdrawCard() {
           {withdrawState === "done" && withdrawResult ? (
             <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
               <p className="font-medium">
-                Withdrawn{" "}
-                {withdrawResult.withdrawnAmount.toLocaleString(undefined, {
-                  maximumFractionDigits: 6,
-                })}{" "}
-                USDT
+                Withdrawn {formatUsdt(withdrawResult.withdrawnAmount)} USDT
               </p>
               {withdrawResult.txHash ? (
                 <a

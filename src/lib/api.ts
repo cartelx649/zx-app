@@ -191,6 +191,52 @@ export type MonthlyRoiApi = {
   count: number;
 };
 
+export type WithdrawableTotals = {
+  amount: number;
+  count: number;
+  withdrawnAmount: number;
+  claimableAmount: number;
+};
+
+export type IncomeEntry = {
+  _id: string;
+  amount: number;
+  type: "direct" | "override";
+  level: number;
+  sourceUserId: string;
+  cycleId: string;
+  note: string;
+  monthKey: string;
+  createdAt: string;
+};
+
+export type WithdrawalRecord = {
+  _id: string;
+  userId: string;
+  cycleId: string;
+  requestedAmount: number;
+  approvedAmount: number;
+  status: "pending" | "approved" | "rejected" | "paid";
+  monthKey: string | null;
+  incomeType: "direct" | "override" | "roi" | null;
+  payoutTxHash: string | null;
+  rejectionReason: string | null;
+  processedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WithdrawableIncomeApi = {
+  monthKey: string;
+  totals: {
+    direct: WithdrawableTotals;
+    override: WithdrawableTotals;
+    combined: { amount: number; count: number };
+  };
+  entries: IncomeEntry[];
+  withdrawals: WithdrawalRecord[];
+};
+
 export type WithdrawalContractApi = {
   monthKey: string;
   roiTotal: number;
@@ -251,11 +297,17 @@ export const api = {
       { token },
     ),
 
+  getWithdrawableIncome: (token: string, month: string) =>
+    apiFetch<WithdrawableIncomeApi>(
+      `/users/income/withdrawable?month=${encodeURIComponent(month)}`,
+      { token },
+    ),
+
   withdrawContract: (
     args: {
       walletAddress: string;
       amount: number;
-      type: "roi";
+      type: "roi" | "direct" | "override";
       monthKey: string;
     },
     token: string,
