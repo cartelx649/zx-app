@@ -13,13 +13,13 @@ export function StatCard({
 }) {
   const valueTone = tone === "pending" ? "text-amber-300" : "text-white/85";
   return (
-    <div className="relative overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] p-5 transition hover:border-purple-400/30 hover:bg-white/[0.04]">
-      <div className="text-white/80">{icon}</div>
-      <p className="mt-3 text-sm font-semibold tracking-wide text-white">
+    <div className="relative overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] p-5 transition hover:border-green-400/20 hover:bg-white/[0.04]">
+      <div className="text-white/60">{icon}</div>
+      <p className="mt-3 text-xs font-medium tracking-wide text-white/45">
         {label}
       </p>
-      <div className="mt-2 h-px w-full bg-gradient-to-r from-purple-500/30 via-white/10 to-transparent" />
-      <p className={`mt-3 font-mono text-base italic ${valueTone}`}>{value}</p>
+      <div className="mt-2 h-px w-full bg-gradient-to-r from-green-400/25 via-white/8 to-transparent" />
+      <p className={`mt-3 font-mono text-base font-semibold ${valueTone}`}>{value}</p>
     </div>
   );
 }

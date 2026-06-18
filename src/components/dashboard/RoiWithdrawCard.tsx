@@ -90,7 +90,7 @@ export function RoiWithdrawCard() {
     <HudPanel
       title="Monthly ROI"
       subtitle={data?.monthKey ?? MONTH}
-      accent="magenta"
+      accent="purple"
     >
       {errorMessage ? (
         <p className="text-sm text-red-300">{errorMessage}</p>

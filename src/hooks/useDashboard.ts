@@ -60,6 +60,8 @@ const EMPTY_DASHBOARD: Dashboard = {
   activeCycleLabel: "",
   accountActive: false,
   needsReTopUp: false,
+  cycles: [],
+  cyclesSummary: { total: 0, active: 0, completed: 0, canRetopUp: false },
   withdrawalWindowDay: 0,
   withdrawalWindowOpen: false,
   withdrawalWindowOpenNow: false,
@@ -132,6 +134,8 @@ function adapt(
       : "",
     accountActive: Boolean(cycle?.accountActive),
     needsReTopUp: Boolean(cycle?.retopUpRequired),
+    cycles: [],
+    cyclesSummary: { total: 0, active: 0, completed: 0, canRetopUp: false },
 
     withdrawalWindowDay: num(win?.dayOfMonth),
     withdrawalWindowOpen: Boolean(win?.isOpen),

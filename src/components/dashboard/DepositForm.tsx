@@ -429,7 +429,7 @@ export function DepositForm() {
       <HudPanel
         title="Your referral link"
         subtitle="Share to earn referral overrides"
-        accent="magenta"
+        accent="purple"
       >
         <p className="mb-2 break-all font-mono text-xs text-purple-300">
           {dashboard.referralLink || "—"}

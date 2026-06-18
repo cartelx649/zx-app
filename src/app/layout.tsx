@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, Orbitron } from "next/font/google";
 import "./globals.css";
 import { Web3Provider } from "@/components/providers/Web3Provider";
 
@@ -9,17 +9,17 @@ const inter = Inter({
   display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
+const orbitron = Orbitron({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-space-grotesk",
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-orbitron",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Cronix — Network growth on BSC",
+  title: "Cronix — Earn 2X ROI on BNB Smart Chain",
   description:
-    "ROI, referrals, and cycles on BNB Smart Chain with USDT (BEP-20). Treasury model dashboard.",
+    "Deposit USDT on BSC, earn 2X ROI monthly, and grow your network with 5% direct commission and level override income. Powered by the treasury model.",
 };
 
 export default function RootLayout({
@@ -28,10 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable}`}
-    >
+    <html lang="en" className={`${inter.variable} ${orbitron.variable}`}>
       <body className="min-h-screen font-sans antialiased">
         <Web3Provider>{children}</Web3Provider>
       </body>

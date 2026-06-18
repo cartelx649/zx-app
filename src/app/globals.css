@@ -3,19 +3,22 @@
 @tailwind utilities;
 
 :root {
-  --background: #050505;
-  --foreground: #fafafa;
-  --hud-base: rgba(255, 255, 255, 0.02);
-  --hud-panel: rgba(20, 20, 30, 0.55);
-  --hud-stroke: rgba(255, 255, 255, 0.08);
-  --hud-cyan: #7c3aed;
-  --hud-magenta: #a855f7;
+  --background: #0b0d10;
+  --foreground: #e6e8eb;
+  --card-bg: #161a22;
+  --card-stroke: rgba(93, 169, 255, 0.12);
+  --hud-panel: rgba(22, 26, 34, 0.7);
+  --hud-stroke: rgba(255, 255, 255, 0.07);
+  --hud-green: #4ade80;
+  --hud-cyan: #5da9ff;
+  --hud-purple: #9b8cff;
   --hud-amber: #f59e0b;
-  --hud-dim: #9ca3af;
-  --hud-danger: #f87171;
-  --glass-bg: rgba(20, 20, 30, 0.55);
-  --glass-stroke: rgba(255, 255, 255, 0.08);
-  --glow-purple: #a855f7;
+  --hud-dim: #9aa4b2;
+  --hud-danger: #fb7185;
+  --glass-bg: rgba(22, 26, 34, 0.65);
+  --glass-stroke: rgba(93, 169, 255, 0.1);
+  --glow-green: rgba(74, 222, 128, 0.45);
+  --glow-cyan: rgba(93, 169, 255, 0.45);
 }
 
 @layer base {
@@ -23,39 +26,48 @@
     @apply scroll-smooth;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    min-height: 100vh;
+    @apply antialiased;
+    color: var(--foreground);
     background-color: var(--background);
     background-image:
       radial-gradient(
-        circle at 12% 8%,
-        rgba(124, 58, 237, 0.18) 0%,
-        rgba(124, 58, 237, 0) 45%
+        ellipse at 20% 10%,
+        rgba(93, 169, 255, 0.08) 0%,
+        transparent 55%
       ),
       radial-gradient(
-        circle at 88% 92%,
-        rgba(168, 85, 247, 0.16) 0%,
-        rgba(168, 85, 247, 0) 50%
+        ellipse at 80% 90%,
+        rgba(74, 222, 128, 0.06) 0%,
+        transparent 55%
       ),
       radial-gradient(
         circle at 1px 1px,
-        rgba(255, 255, 255, 0.045) 1px,
+        rgba(255, 255, 255, 0.03) 1px,
         transparent 0
       );
-    background-size:
-      100% 100%,
-      100% 100%,
-      28px 28px;
+    background-size: 100% 100%, 100% 100%, 32px 32px;
     background-attachment: fixed, fixed, fixed;
+    min-height: 100vh;
   }
 }
 
 @layer utilities {
+  .font-display {
+    font-family: var(--font-orbitron), 'Inter', system-ui, sans-serif;
+  }
+
   .glass {
     background-color: var(--glass-bg);
     border: 1px solid var(--glass-stroke);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+  }
+
+  .card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-stroke);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
   .hud-clip {
@@ -68,11 +80,29 @@
       0 calc(100% - 12px)
     );
   }
+
+  .text-glow-green {
+    text-shadow: 0 0 28px rgba(74, 222, 128, 0.6), 0 0 60px rgba(74, 222, 128, 0.25);
+  }
+
+  .text-glow-cyan {
+    text-shadow: 0 0 28px rgba(93, 169, 255, 0.6), 0 0 60px rgba(93, 169, 255, 0.25);
+  }
+
+  .border-glow-green {
+    box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.3), 0 0 20px rgba(74, 222, 128, 0.15);
+  }
+
+  .border-glow-cyan {
+    box-shadow: 0 0 0 1px rgba(93, 169, 255, 0.3), 0 0 20px rgba(93, 169, 255, 0.15);
+  }
 }
 
+/* ── Keyframes ─────────────────────────────────────────── */
+
 @keyframes twinkle {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.9; }
 }
 
 @keyframes spin-slow {
@@ -92,4 +122,46 @@
 @keyframes drift {
   0%, 100% { transform: translate3d(0, 0, 0); }
   50% { transform: translate3d(-18px, 24px, 0); }
+}
+
+@keyframes float-orb {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(20px, -28px, 0); }
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hud-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes glow-pulse-green {
+  0%, 100% { box-shadow: 0 0 24px -6px rgba(74, 222, 128, 0.35); }
+  50% { box-shadow: 0 0 40px -4px rgba(74, 222, 128, 0.65); }
+}
+
+@keyframes glow-pulse-cyan {
+  0%, 100% { box-shadow: 0 0 24px -6px rgba(93, 169, 255, 0.35); }
+  50% { box-shadow: 0 0 40px -4px rgba(93, 169, 255, 0.65); }
+}
+
+@keyframes ticker-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(200%); opacity: 0; }
 }

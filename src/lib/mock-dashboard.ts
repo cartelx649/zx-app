@@ -49,6 +49,8 @@ export const mockDashboard: DashboardMock = {
   activeCycleLabel: "Cycle 2 — ROI toward 2X, total cap 3X",
   accountActive: true,
   needsReTopUp: false,
+  cycles: [],
+  cyclesSummary: { total: 1, active: 1, completed: 0, canRetopUp: false },
 
   withdrawalWindowDay: 4,
   withdrawalWindowOpen: true,

@@ -211,7 +211,7 @@ export function DashboardContent() {
           )}
         </HudPanel>
 
-        <HudPanel title="Treasury note" accent="magenta">
+        <HudPanel title="Treasury note" accent="purple">
           <p className="text-sm leading-relaxed text-white/65">
             Deposits route to the treasury wallet for deployment. Payouts use a
             separate payout wallet funded on the monthly window.
@@ -220,21 +220,21 @@ export function DashboardContent() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <HudPanel title="ROI progress (2X)" subtitle={d.roiSlabLabel}>
+        <HudPanel title="ROI progress (2X)" subtitle={d.roiSlabLabel} accent="green">
           <HudProgress
             label="Toward ROI stop"
             current={d.roiEarnedUsdt}
             target={d.roiTargetUsdt}
-            tone="cyan"
+            tone="green"
             footnote="Monthly ROI applies until 2X of your deposit is reached."
           />
         </HudPanel>
-        <HudPanel title="Total income cap (3X)" subtitle="All income streams">
+        <HudPanel title="Total income cap (3X)" subtitle="All income streams" accent="cyan">
           <HudProgress
             label="Toward global cap"
             current={d.capEarnedUsdt}
             target={d.capMaxUsdt}
-            tone="magenta"
+            tone="cyan"
             footnote="ROI + direct (5%) + level overrides count toward 3X."
           />
         </HudPanel>

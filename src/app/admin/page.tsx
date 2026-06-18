@@ -42,7 +42,7 @@ export default function AdminPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <HudPanel title="Treasury wallet" subtitle="Receive deposits">
             <p className="text-sm text-hud-dim">
-              Status: <span className="text-hud-cyan">placeholder</span>
+              Status: <span className="text-hud-cyan text-cyan-400">placeholder</span>
             </p>
             <p className="mt-2 font-mono text-xs break-all text-foreground">
               0x0000000000000000000000000000000000000000
@@ -67,7 +67,7 @@ export default function AdminPage() {
           </HudButton>
         </HudPanel>
 
-        <HudPanel title="Level percentages" accent="magenta">
+        <HudPanel title="Level percentages" accent="purple">
           <p className="text-sm text-hud-dim">
             Manage 20-level ROI override percentages.
           </p>

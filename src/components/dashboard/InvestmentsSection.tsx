@@ -110,14 +110,14 @@ export function InvestmentsSection({
   const canClaim = remainingDisplay > 0 && Boolean(onClaim);
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-purple-500/20 bg-[#080410] p-6 shadow-[0_0_40px_-12px_rgba(124,58,237,0.45)]">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-purple-600/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-fuchsia-600/10 blur-3xl" />
+    <section className="relative overflow-hidden rounded-2xl border border-green-400/15 bg-white/[0.025] p-6 shadow-[0_0_40px_-12px_rgba(74,222,128,0.2)]">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-green-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-cyan-500/8 blur-3xl" />
 
-      <header className="relative flex items-center gap-2 text-cyan-300">
+      <header className="relative flex items-center gap-2 text-green-400">
         <PlantIcon />
-        <h2 className="font-display text-lg font-semibold tracking-wide">
-          Investments
+        <h2 className="font-display text-sm font-bold tracking-widest text-green-400">
+          INVESTMENTS
         </h2>
       </header>
 
@@ -150,9 +150,9 @@ export function InvestmentsSection({
           type="button"
           onClick={onClaim}
           disabled={!canClaim}
-          className="rounded-full bg-white px-10 py-2.5 text-sm font-semibold text-black shadow-[0_0_24px_-4px_rgba(255,255,255,0.25)] transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full bg-green-400 px-10 py-2.5 text-sm font-bold text-black shadow-[0_0_24px_-4px_rgba(74,222,128,0.55)] transition hover:bg-green-300 hover:shadow-[0_0_32px_-2px_rgba(74,222,128,0.8)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Claim
+          Claim ROI
         </button>
       </div>
     </section>

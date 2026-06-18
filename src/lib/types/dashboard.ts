@@ -6,6 +6,68 @@ export type DashboardSlabView = {
   label: string;
 };
 
+export type CycleInfo = {
+  cycleId: string;
+  cycleNumber: number;
+  packageAmount: number;
+  roiTarget: number;
+  earnedRoi: number;
+  incomeCap: number;
+  totalEarned: number;
+  earnedDirect: number;
+  earnedOverride: number;
+  isActive: boolean;
+  startedAt: string;
+  closedAt: string | null;
+  slab: DashboardSlabView | null;
+  roiProgress: { current: number; target: number };
+  capProgress: { current: number; target: number };
+  directLevelProgress: { current: number; target: number };
+};
+
+export type RetopupReportEntry = {
+  index: number;
+  depositId: string;
+  cycleId: string;
+  txHash: string;
+  amount: number;
+  packageType: string;
+  roiSlabName: string;
+  status: string;
+  date: string;
+};
+
+export type RoiDailyEntry = { date: string; amount: number };
+export type RoiReportCycle = {
+  cycleNumber: number;
+  cycleId: string;
+  packageAmount: number;
+  roiTarget: number;
+  earnedRoi: number;
+  incomeCap: number;
+  isActive: boolean;
+  startedAt: string;
+  closedAt: string | null;
+  totalRoiFromLedger: number;
+  dailyBreakdown: RoiDailyEntry[];
+  ledgerEntries: { entryId: string; amount: number; monthKey: string; note: string; date: string }[];
+};
+
+export type WorkingIncomeEntry = {
+  entryId: string;
+  type: "direct" | "override";
+  level: number;
+  amount: number;
+  monthKey: string;
+  sourceWalletAddress: string | null;
+  sourceUserDeposit: number | null;
+  cycleId: string;
+  cycleNumber: number | null;
+  topUpAmount: number | null;
+  note: string;
+  date: string;
+};
+
 export type TeamMember = {
   address: string;
   depth: number;
@@ -34,10 +96,9 @@ export type Dashboard = {
   totalIncomeEarnedUsdt: number;
   totalIncomeClaimedUsdt: number;
   toBeClaimedUsdt: number;
-  /** Reserved for future per-level breakdown; always [] from the new API. */
   levelIncomeByLevel?: { level: number; percentLabel: string; earnedUsdt: number }[];
 
-  // active cycle
+  // active cycle (legacy — oldest active)
   cycleExists: boolean;
   currentCycle: number;
   currentPackageUsdt: number;
@@ -51,6 +112,10 @@ export type Dashboard = {
   activeCycleLabel: string;
   accountActive: boolean;
   needsReTopUp: boolean;
+
+  // all cycles
+  cycles: CycleInfo[];
+  cyclesSummary: { total: number; active: number; completed: number; canRetopUp: boolean };
 
   // withdrawal window
   withdrawalWindowDay: number;
