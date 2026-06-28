@@ -2,9 +2,9 @@
 
 import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
 import { bsc, bscTestnet } from "wagmi/chains";
-import { useAppKit } from "@reown/appkit/react";
 import { HudButton } from "@/components/hud/HudButton";
 import { useAuth } from "@/hooks/useAuth";
+import { appKit } from "@/lib/appkit";
 import Image from "next/image";
 
 function shortAddress(addr: string) {
@@ -15,7 +15,6 @@ export function WalletBar() {
   const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
-  const { open } = useAppKit();
   const { signOut } = useAuth();
 
   const isBsc = chainId === bsc.id || chainId === bscTestnet.id;
@@ -71,7 +70,7 @@ export function WalletBar() {
             </HudButton>
           </>
         ) : (
-          <HudButton onClick={() => void open()}>Connect Wallet</HudButton>
+          <HudButton onClick={() => void appKit.open()}>Connect Wallet</HudButton>
         )}
       </div>
     </div>
