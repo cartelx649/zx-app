@@ -72,6 +72,19 @@ function randomIdempotencyKey(): string {
   return `idemp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function withSearch(
+  path: string,
+  params: Record<string, string | number | boolean | undefined>,
+) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue;
+    search.set(key, String(value));
+  }
+  const suffix = search.toString();
+  return suffix ? `${path}?${suffix}` : path;
+}
+
 async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
   const { token, idempotencyKey, json, headers, timeoutMs, ...rest } = opts;
   const controller = new AbortController();
@@ -132,6 +145,21 @@ export type LoginResponse = {
   accessToken?: string;
   user?: Record<string, unknown>;
 } & Record<string, unknown>;
+
+export type AppUser = {
+  _id: string;
+  walletAddress: string;
+  sponsorWalletAddress: string | null;
+  referralId: string;
+  role: "user" | "admin";
+  isActive: boolean;
+  totalDeposited: number;
+  totalEarned: number;
+  directTeamCount: number;
+  currentCycleNumber: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 export type VerifyDepositArgs = {
   txHash: string;
@@ -260,6 +288,48 @@ export type WithdrawalHistoryApi = {
   pagination: WithdrawalHistoryPagination;
 };
 
+export type AdminKpisApi = {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  totalDeposits: number;
+  totalWithdrawals: number;
+  totalPayouts: number;
+  reTopUsers: number;
+};
+
+export type AdminRoiSlabApi = {
+  name: string;
+  min: number;
+  max: number | null;
+  monthlyPercent: number;
+};
+
+export type AdminOverridePercentageApi = {
+  level: number;
+  percent: number;
+};
+
+export type AdminConfigApi = {
+  roiSlabs: AdminRoiSlabApi[];
+  overridePercentages: AdminOverridePercentageApi[];
+  withdrawalWindow: {
+    dayOfMonth: number;
+    isOpen: boolean;
+  };
+  emergencyPause: boolean;
+};
+
+export type AdminSyncBatchApi = {
+  _id?: string;
+  batchId: string;
+  source?: string;
+  status?: string;
+  stats?: Record<string, unknown>;
+  revertedAt?: string | null;
+  createdAt?: string;
+};
+
 export type WithdrawalHistoryParams = {
   limit?: number;
   offset?: number;
@@ -321,6 +391,18 @@ export const api = {
       json: args,
     }),
 
+  backendLogin: (args: {
+    walletAddress: string;
+    password: string;
+    sponsorWalletAddress?: string;
+  }) =>
+    apiFetch<LoginResponse>("/auth/backend-login", {
+      method: "POST",
+      json: args,
+    }),
+
+  getMe: (token: string) => apiFetch<AppUser>("/users/me", { token }),
+
   verifyDeposit: (args: VerifyDepositArgs, token: string) =>
     apiFetch<unknown>("/deposits/verify", {
       method: "POST",
@@ -365,16 +447,102 @@ export const api = {
     token: string,
     params: WithdrawalHistoryParams = {},
   ) => {
-    const qs = new URLSearchParams();
-    if (params.limit != null) qs.set("limit", String(params.limit));
-    if (params.offset != null) qs.set("offset", String(params.offset));
-    if (params.status) qs.set("status", params.status);
-    if (params.type) qs.set("type", params.type);
-    const suffix = qs.toString() ? `?${qs.toString()}` : "";
-    return apiFetch<WithdrawalHistoryApi>(`/withdrawals/history${suffix}`, {
-      token,
-    });
+    return apiFetch<WithdrawalHistoryApi>(
+      withSearch("/withdrawals/history", {
+        limit: params.limit,
+        offset: params.offset,
+        status: params.status,
+        type: params.type,
+      }),
+      {
+        token,
+      },
+    );
   },
+
+  getAdminKpis: (token: string) =>
+    apiFetch<AdminKpisApi>("/admin/kpis", { token }),
+
+  getAdminConfig: (token: string) =>
+    apiFetch<AdminConfigApi>("/admin/config", { token }),
+
+  updateAdminConfig: (token: string, config: AdminConfigApi) =>
+    apiFetch<AdminConfigApi>("/admin/config", {
+      method: "PATCH",
+      token,
+      json: config,
+    }),
+
+  syncDataJson: (password: string) =>
+    apiFetch<unknown>("/admin/sync-data-json", {
+      method: "POST",
+      json: { password },
+    }),
+
+  syncRoiReport: (password: string) =>
+    apiFetch<unknown>("/admin/sync-roi-report", {
+      method: "POST",
+      json: { password },
+    }),
+
+  listSyncBatches: (password: string) =>
+    apiFetch<AdminSyncBatchApi[]>(
+      withSearch("/admin/sync-batches", { password }),
+    ),
+
+  unsyncRoiReport: (password: string, batchId: string) =>
+    apiFetch<unknown>("/admin/unsync-roi-report", {
+      method: "POST",
+      json: { password, batchId },
+    }),
+
+  getIncomeOverview: (password: string, months: number) =>
+    apiFetch<unknown>(
+      withSearch("/admin/income-overview", { password, months }),
+    ),
+
+  getMonthlyUserIncome: (password: string, month: string) =>
+    apiFetch<unknown>(
+      withSearch("/admin/monthly-user-income", { password, month }),
+    ),
+
+  getAdminWithdrawableIncome: (password: string, month: string) =>
+    apiFetch<unknown>(
+      withSearch("/admin/income/withdrawable", { password, month }),
+    ),
+
+  getAdminUserWithdrawableIncome: (
+    password: string,
+    userId: string,
+    month: string,
+  ) =>
+    apiFetch<unknown>(
+      withSearch(`/admin/users/${encodeURIComponent(userId)}/income/withdrawable`, {
+        password,
+        month,
+      }),
+    ),
+
+  getCapReachedCycles: (password: string, limit: number, offset: number) =>
+    apiFetch<unknown>(
+      withSearch("/admin/cycles/cap-reached", { password, limit, offset }),
+    ),
+
+  fixLedgerMonthKeys: (password: string, dry: boolean) =>
+    apiFetch<unknown>("/admin/fix-ledger-monthkeys", {
+      method: "POST",
+      json: { password, dry },
+    }),
+
+  payWithdrawal: (withdrawalId: string, token: string) =>
+    apiFetch<unknown>(
+      `/withdrawals/${encodeURIComponent(withdrawalId)}/pay`,
+      {
+        method: "POST",
+        token,
+        idempotencyKey: randomIdempotencyKey(),
+      },
+    ),
 
   health: () => apiFetch<unknown>("/health"),
 };

@@ -6,11 +6,7 @@ import { useEffect } from "react";
 import { useAccount } from "wagmi";
 import { WalletBar } from "@/components/hud/WalletBar";
 import { useAuth } from "@/hooks/useAuth";
-
-const links = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/withdrawals", label: "Withdrawals" },
-];
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function DashboardLayout({
   children,
@@ -20,6 +16,13 @@ export default function DashboardLayout({
   const router = useRouter();
   const { isConnected } = useAccount();
   const { isAuthenticated } = useAuth();
+  const { isAdmin } = useCurrentUser();
+
+  const links = [
+    { href: "/dashboard", label: "Overview" },
+    { href: "/dashboard/withdrawals", label: "Withdrawals" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+  ];
 
   useEffect(() => {
     if (!isConnected || !isAuthenticated) router.replace("/");
