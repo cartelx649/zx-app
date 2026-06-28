@@ -330,6 +330,58 @@ export type AdminSyncBatchApi = {
   createdAt?: string;
 };
 
+export type AdminCycleProgressStatus =
+  | "all"
+  | "attention"
+  | "active"
+  | "inactive"
+  | "roi_reached"
+  | "cap_reached";
+
+export type AdminCycleProgressRowApi = {
+  cycleId: string;
+  userId: string;
+  walletAddress: string | null;
+  referralId: string | null;
+  cycleNumber: number;
+  packageAmount: number;
+  earnedRoi: number;
+  roiTarget: number;
+  totalEarned: number;
+  incomeCap: number;
+  earnedDirect: number;
+  earnedOverride: number;
+  isActive: boolean;
+  startedAt: string;
+  closedAt: string | null;
+  roiProgressPercent: number;
+  capProgressPercent: number;
+  remainingToRoiTarget: number;
+  remainingToIncomeCap: number;
+  roiReached: boolean;
+  capReached: boolean;
+  status: Exclude<AdminCycleProgressStatus, "all" | "attention">;
+};
+
+export type AdminCycleProgressApi = {
+  meta: {
+    total: number;
+    filteredTotal: number;
+    limit: number;
+    offset: number;
+    count: number;
+    status: AdminCycleProgressStatus;
+  };
+  summary: {
+    totalUsers: number;
+    activeUsers: number;
+    roiReachedUsers: number;
+    capReachedUsers: number;
+    attentionUsers: number;
+  };
+  cycles: AdminCycleProgressRowApi[];
+};
+
 export type WithdrawalHistoryParams = {
   limit?: number;
   offset?: number;
@@ -465,6 +517,23 @@ export const api = {
 
   getAdminConfig: (token: string) =>
     apiFetch<AdminConfigApi>("/admin/config", { token }),
+
+  getAdminCycleProgress: (
+    token: string,
+    params: {
+      limit?: number;
+      offset?: number;
+      status?: AdminCycleProgressStatus;
+    } = {},
+  ) =>
+    apiFetch<AdminCycleProgressApi>(
+      withSearch("/admin/cycles/progress", {
+        limit: params.limit,
+        offset: params.offset,
+        status: params.status,
+      }),
+      { token },
+    ),
 
   updateAdminConfig: (token: string, config: AdminConfigApi) =>
     apiFetch<AdminConfigApi>("/admin/config", {

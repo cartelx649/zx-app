@@ -10,7 +10,13 @@ import { HudPanel } from "@/components/hud/HudPanel";
 import { HudStat } from "@/components/hud/HudStat";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { extractToken, type AdminConfigApi, type AdminKpisApi, api } from "@/lib/api";
+import {
+  api,
+  extractToken,
+  type AdminConfigApi,
+  type AdminCycleProgressStatus,
+  type AdminKpisApi,
+} from "@/lib/api";
 
 function currentMonthKey() {
   const now = new Date();
@@ -25,6 +31,22 @@ function formatNumber(value: number) {
 
 function formatUsdt(value: number) {
   return `${formatNumber(value)} USDT`;
+}
+
+function formatPercent(value: number) {
+  return `${value.toFixed(2)}%`;
+}
+
+function shortAddress(value: string | null) {
+  if (!value) return "—";
+  return `${value.slice(0, 6)}…${value.slice(-4)}`;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
 }
 
 function toErrorMessage(error: unknown) {
@@ -155,7 +177,22 @@ export default function AdminPage() {
     staleTime: 30_000,
   });
 
+  const cycleProgressQuery = useQuery({
+    queryKey: ["admin-cycle-progress", Boolean(activeToken), activeToken],
+    enabled: adminEnabled,
+    queryFn: () =>
+      api.getAdminCycleProgress(activeToken!, {
+        limit: 250,
+        offset: 0,
+        status: "all",
+      }),
+    staleTime: 30_000,
+  });
+
   const [configDraft, setConfigDraft] = useState<AdminConfigApi | null>(null);
+  const [cappingStatus, setCappingStatus] =
+    useState<AdminCycleProgressStatus>("all");
+  const [cappingSearch, setCappingSearch] = useState("");
   const [syncPassword, setSyncPassword] = useState("");
   const [reportPassword, setReportPassword] = useState("");
   const [monthsInput, setMonthsInput] = useState("12");
@@ -275,6 +312,26 @@ export default function AdminPage() {
   }
 
   const stats = useMemo(() => adminStats(kpisQuery.data), [kpisQuery.data]);
+  const visibleCycleRows = useMemo(() => {
+    const rows = cycleProgressQuery.data?.cycles ?? [];
+    const search = cappingSearch.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (cappingStatus !== "all") {
+        if (cappingStatus === "attention" && !(row.roiReached || row.capReached)) {
+          return false;
+        }
+        if (cappingStatus !== "attention" && row.status !== cappingStatus) {
+          return false;
+        }
+      }
+      if (!search) return true;
+      return (
+        row.walletAddress?.toLowerCase().includes(search) ||
+        row.referralId?.toLowerCase().includes(search) ||
+        String(row.cycleNumber).includes(search)
+      );
+    });
+  }, [cappingSearch, cappingStatus, cycleProgressQuery.data?.cycles]);
 
   if (isCurrentUserLoading || testUserQuery.isLoading) {
     return (
@@ -735,6 +792,184 @@ export default function AdminPage() {
                   data={results["config-save"]}
                   error={errors["config-save"]}
                 />
+              </div>
+            )}
+          </HudPanel>
+
+          <HudPanel
+            title="User capping watchlist"
+            subtitle="Track 2X ROI target and 3X total cap for each user's latest cycle"
+            accent="amber"
+          >
+            {previewMode ? (
+              <p className="text-sm text-white/65">
+                Live capping data admin auth ke baad load hogi.
+              </p>
+            ) : cycleProgressQuery.error ? (
+              <p className="text-sm text-red-300">
+                {toErrorMessage(cycleProgressQuery.error)}
+              </p>
+            ) : !cycleProgressQuery.data ? (
+              <p className="text-sm text-white/65">Loading cycle progress…</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <HudStat
+                    label="Tracked users"
+                    value={formatNumber(cycleProgressQuery.data.summary.totalUsers)}
+                  />
+                  <HudStat
+                    label="ROI 2X reached"
+                    value={formatNumber(cycleProgressQuery.data.summary.roiReachedUsers)}
+                  />
+                  <HudStat
+                    label="Cap 3X reached"
+                    value={formatNumber(cycleProgressQuery.data.summary.capReachedUsers)}
+                  />
+                  <HudStat
+                    label="Needs notification"
+                    value={formatNumber(cycleProgressQuery.data.summary.attentionUsers)}
+                  />
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
+                  <Field label="Search user">
+                    <input
+                      className={textInputClass()}
+                      value={cappingSearch}
+                      onChange={(e) => setCappingSearch(e.target.value)}
+                      placeholder="wallet / referral / cycle"
+                    />
+                  </Field>
+                  <Field label="Status filter">
+                    <select
+                      className={textInputClass()}
+                      value={cappingStatus}
+                      onChange={(e) =>
+                        setCappingStatus(e.target.value as AdminCycleProgressStatus)
+                      }
+                    >
+                      <option value="all">All users</option>
+                      <option value="attention">Needs notification</option>
+                      <option value="roi_reached">ROI 2X reached</option>
+                      <option value="cap_reached">Cap 3X reached</option>
+                      <option value="active">Active cycles</option>
+                      <option value="inactive">Inactive cycles</option>
+                    </select>
+                  </Field>
+                  <div className="flex items-end">
+                    <HudButton
+                      className="w-full"
+                      variant="ghost"
+                      onClick={() => void cycleProgressQuery.refetch()}
+                    >
+                      Refresh capping data
+                    </HudButton>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-white/8 bg-black/10">
+                  <table className="min-w-full text-left text-sm text-white/80">
+                    <thead className="border-b border-white/8 text-xs uppercase tracking-wider text-white/45">
+                      <tr>
+                        <th className="px-4 py-3">User</th>
+                        <th className="px-4 py-3">Cycle</th>
+                        <th className="px-4 py-3">ROI 2X progress</th>
+                        <th className="px-4 py-3">Total 3X cap</th>
+                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleCycleRows.map((row) => {
+                        const statusTone = row.capReached
+                          ? "border-red-400/30 bg-red-500/10 text-red-300"
+                          : row.roiReached
+                            ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                            : row.isActive
+                              ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300"
+                              : "border-white/10 bg-white/5 text-white/65";
+                        const actionText = row.capReached
+                          ? "Cap 3X reached — ask for re-top up."
+                          : row.roiReached
+                            ? "ROI 2X reached — notify user."
+                            : row.isActive
+                              ? "Cycle still running."
+                              : "Inactive cycle — review next step.";
+
+                        return (
+                          <tr key={row.cycleId} className="border-b border-white/6 last:border-b-0">
+                            <td className="px-4 py-3 align-top">
+                              <div className="font-mono text-white">{shortAddress(row.walletAddress)}</div>
+                              <div className="text-xs text-white/45">
+                                {row.walletAddress ?? "No wallet"}
+                              </div>
+                              <div className="mt-1 text-xs text-white/55">
+                                Ref: {row.referralId ?? "—"}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <div className="font-medium text-white">
+                                Cycle {row.cycleNumber}
+                              </div>
+                              <div className="text-xs text-white/55">
+                                Package: {formatUsdt(row.packageAmount)}
+                              </div>
+                              <div className="text-xs text-white/45">
+                                Started: {formatDateTime(row.startedAt)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <div className="font-medium text-white">
+                                {formatUsdt(row.earnedRoi)} / {formatUsdt(row.roiTarget)}
+                              </div>
+                              <div className="text-xs text-white/55">
+                                {formatPercent(row.roiProgressPercent)} complete
+                              </div>
+                              <div className="text-xs text-white/45">
+                                Remaining: {formatUsdt(row.remainingToRoiTarget)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <div className="font-medium text-white">
+                                {formatUsdt(row.totalEarned)} / {formatUsdt(row.incomeCap)}
+                              </div>
+                              <div className="text-xs text-white/55">
+                                {formatPercent(row.capProgressPercent)} complete
+                              </div>
+                              <div className="text-xs text-white/45">
+                                Remaining: {formatUsdt(row.remainingToIncomeCap)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${statusTone}`}>
+                                {row.capReached
+                                  ? "Cap 3X reached"
+                                  : row.roiReached
+                                    ? "ROI 2X reached"
+                                    : row.isActive
+                                      ? "Active"
+                                      : "Inactive"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 align-top text-xs text-white/70">
+                              <p>{actionText}</p>
+                              <p className="mt-1 text-white/45">
+                                Direct: {formatUsdt(row.earnedDirect)} · Override:{" "}
+                                {formatUsdt(row.earnedOverride)}
+                              </p>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {visibleCycleRows.length === 0 ? (
+                    <div className="px-4 py-6 text-sm text-white/55">
+                      Is filter me koi user nahi mila.
+                    </div>
+                  ) : null}
+                </div>
               </div>
             )}
           </HudPanel>
