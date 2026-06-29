@@ -13,6 +13,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   api,
   extractToken,
+  type AdminConfigApi,
   type AdminCycleProgressStatus,
   type AdminKpisApi,
 } from "@/lib/api";
@@ -134,6 +135,13 @@ export default function AdminPage() {
     staleTime: 30_000,
   });
 
+  const configQuery = useQuery({
+    queryKey: ["admin-config", Boolean(activeToken), activeToken],
+    enabled: adminEnabled,
+    queryFn: () => api.getAdminConfig(activeToken!),
+    staleTime: 30_000,
+  });
+
   const cycleProgressQuery = useQuery({
     queryKey: ["admin-cycle-progress", Boolean(activeToken), activeToken],
     enabled: adminEnabled,
@@ -181,6 +189,17 @@ export default function AdminPage() {
       throw new Error("Backend login succeeded but no token was returned.");
     }
     setTestToken(jwt);
+  }
+
+  async function updatePauseControl(
+    field: "roiWithdrawPaused" | "incomeWithdrawPaused",
+    value: boolean,
+  ) {
+    if (!activeToken) return;
+    await runAction(`pause-control-${field}`, () =>
+      api.updateAdminConfig(activeToken, { [field]: value } as Partial<AdminConfigApi>),
+    );
+    await configQuery.refetch();
   }
 
   function adminStats(kpis: AdminKpisApi | undefined) {
@@ -293,6 +312,7 @@ export default function AdminPage() {
                 disabled={previewMode}
                 onClick={() => {
                   void kpisQuery.refetch();
+                  void configQuery.refetch();
                   void cycleProgressQuery.refetch();
                 }}
               >
@@ -406,6 +426,122 @@ export default function AdminPage() {
                 {stats.map((stat) => (
                   <HudStat key={stat.label} label={stat.label} value={stat.value} />
                 ))}
+              </div>
+            )}
+          </HudPanel>
+
+          <HudPanel
+            title="Withdrawal controls"
+            subtitle="Pause or resume ROI and income withdrawals separately for all users"
+            accent="purple"
+          >
+            {previewMode ? (
+              <p className="text-sm text-white/65">
+                Live pause/resume controls admin auth ke baad available honge.
+              </p>
+            ) : configQuery.error ? (
+              <p className="text-sm text-red-300">{toErrorMessage(configQuery.error)}</p>
+            ) : !configQuery.data ? (
+              <p className="text-sm text-white/65">Loading withdrawal controls…</p>
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-2xl border border-white/8 bg-black/10 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-white">ROI withdrawal</p>
+                      <p className="mt-1 text-sm text-white/55">
+                        Pause karne par users monthly ROI withdraw nahi kar paayenge.
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${
+                        configQuery.data.roiWithdrawPaused
+                          ? "border-red-400/30 bg-red-500/10 text-red-300"
+                          : "border-emerald-400/30 bg-emerald-500/10 text-emerald-300"
+                      }`}
+                    >
+                      {configQuery.data.roiWithdrawPaused ? "Paused" : "Live"}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <HudButton
+                      className="flex-1"
+                      variant="danger"
+                      disabled={
+                        configQuery.data.roiWithdrawPaused ||
+                        busy["pause-control-roiWithdrawPaused"]
+                      }
+                      onClick={() => void updatePauseControl("roiWithdrawPaused", true)}
+                    >
+                      {busy["pause-control-roiWithdrawPaused"] ? "Updating…" : "Pause ROI"}
+                    </HudButton>
+                    <HudButton
+                      className="flex-1"
+                      variant="ghost"
+                      disabled={
+                        !configQuery.data.roiWithdrawPaused ||
+                        busy["pause-control-roiWithdrawPaused"]
+                      }
+                      onClick={() => void updatePauseControl("roiWithdrawPaused", false)}
+                    >
+                      Resume ROI
+                    </HudButton>
+                  </div>
+                  {errors["pause-control-roiWithdrawPaused"] ? (
+                    <p className="mt-3 text-sm text-red-300">
+                      {errors["pause-control-roiWithdrawPaused"]}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="rounded-2xl border border-white/8 bg-black/10 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-white">Income withdrawal</p>
+                      <p className="mt-1 text-sm text-white/55">
+                        Pause karne par direct aur override income withdraw band ho jayega.
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${
+                        configQuery.data.incomeWithdrawPaused
+                          ? "border-red-400/30 bg-red-500/10 text-red-300"
+                          : "border-emerald-400/30 bg-emerald-500/10 text-emerald-300"
+                      }`}
+                    >
+                      {configQuery.data.incomeWithdrawPaused ? "Paused" : "Live"}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <HudButton
+                      className="flex-1"
+                      variant="danger"
+                      disabled={
+                        configQuery.data.incomeWithdrawPaused ||
+                        busy["pause-control-incomeWithdrawPaused"]
+                      }
+                      onClick={() => void updatePauseControl("incomeWithdrawPaused", true)}
+                    >
+                      {busy["pause-control-incomeWithdrawPaused"] ? "Updating…" : "Pause income"}
+                    </HudButton>
+                    <HudButton
+                      className="flex-1"
+                      variant="ghost"
+                      disabled={
+                        !configQuery.data.incomeWithdrawPaused ||
+                        busy["pause-control-incomeWithdrawPaused"]
+                      }
+                      onClick={() => void updatePauseControl("incomeWithdrawPaused", false)}
+                    >
+                      Resume income
+                    </HudButton>
+                  </div>
+                  {errors["pause-control-incomeWithdrawPaused"] ? (
+                    <p className="mt-3 text-sm text-red-300">
+                      {errors["pause-control-incomeWithdrawPaused"]}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             )}
           </HudPanel>

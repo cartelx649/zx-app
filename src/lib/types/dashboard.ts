@@ -122,6 +122,8 @@ export type Dashboard = {
   withdrawalWindowOpen: boolean;
   withdrawalWindowOpenNow: boolean;
   withdrawalWindowNote: string;
+  roiWithdrawPaused: boolean;
+  incomeWithdrawPaused: boolean;
 
   // team tree preview
   teamPreview?: TeamMember[];

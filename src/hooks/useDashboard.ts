@@ -66,6 +66,8 @@ const EMPTY_DASHBOARD: Dashboard = {
   withdrawalWindowOpen: false,
   withdrawalWindowOpenNow: false,
   withdrawalWindowNote: "",
+  roiWithdrawPaused: false,
+  incomeWithdrawPaused: false,
 };
 
 function adapt(
@@ -145,6 +147,8 @@ function adapt(
       Boolean(win?.isOpen),
       Boolean(win?.isOpenNow),
     ),
+    roiWithdrawPaused: Boolean(raw.withdrawalControls?.roiPaused),
+    incomeWithdrawPaused: Boolean(raw.withdrawalControls?.incomePaused),
   };
 }
 

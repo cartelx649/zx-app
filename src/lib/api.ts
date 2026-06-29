@@ -318,6 +318,8 @@ export type AdminConfigApi = {
     isOpen: boolean;
   };
   emergencyPause: boolean;
+  roiWithdrawPaused: boolean;
+  incomeWithdrawPaused: boolean;
 };
 
 export type AdminSyncBatchApi = {
@@ -414,12 +416,18 @@ export type DashboardWithdrawalWindowApi = {
   isOpenNow: boolean;
 };
 
+export type DashboardWithdrawalControlsApi = {
+  roiPaused: boolean;
+  incomePaused: boolean;
+};
+
 export type DashboardApi = {
   investments: DashboardInvestmentsApi;
   income: DashboardIncomeApi;
   activeCycle: DashboardActiveCycleApi;
   referral: DashboardReferralApi;
   withdrawalWindow: DashboardWithdrawalWindowApi;
+  withdrawalControls?: DashboardWithdrawalControlsApi;
   /** Legacy — not in the documented shape but still read by /dashboard/withdrawals until a dedicated endpoint exists. */
   withdrawals?: {
     history?: { id: string; date: string; amountUsdt: number; status: string }[];
@@ -535,7 +543,7 @@ export const api = {
       { token },
     ),
 
-  updateAdminConfig: (token: string, config: AdminConfigApi) =>
+  updateAdminConfig: (token: string, config: Partial<AdminConfigApi>) =>
     apiFetch<AdminConfigApi>("/admin/config", {
       method: "PATCH",
       token,

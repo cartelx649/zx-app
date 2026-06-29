@@ -45,6 +45,7 @@ export function RoiWithdrawCard() {
   const adminFee = totalRoi * ADMIN_FEE_RATE;
   const netRoi = totalRoi - adminFee;
   const walletAddress = dashboard.walletAddress;
+  const roiPaused = dashboard.roiWithdrawPaused;
 
   const [withdrawState, setWithdrawState] = useState<WithdrawState>("idle");
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
@@ -64,6 +65,7 @@ export function RoiWithdrawCard() {
     totalRoi > 0 &&
     Boolean(walletAddress) &&
     Boolean(token) &&
+    !roiPaused &&
     withdrawState !== "pending" &&
     withdrawState !== "done";
 
@@ -114,11 +116,23 @@ export function RoiWithdrawCard() {
               variant="primary"
               onClick={handleWithdraw}
               disabled={!canWithdraw}
-              title={totalRoi > 0 ? undefined : "No ROI available to withdraw"}
+              title={
+                roiPaused
+                  ? "ROI withdrawal is paused by admin"
+                  : totalRoi > 0
+                    ? undefined
+                    : "No ROI available to withdraw"
+              }
             >
               {withdrawState === "pending" ? "Withdrawing…" : "Withdraw"}
             </HudButton>
           </div>
+
+          {roiPaused ? (
+            <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+              ROI withdrawal abhi admin ne pause ki hui hai. Resume hote hi aap phir withdraw kar paoge.
+            </div>
+          ) : null}
 
           {totalRoi > 0 ? (
             <div className="space-y-1.5 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm">

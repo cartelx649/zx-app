@@ -56,6 +56,8 @@ export const mockDashboard: DashboardMock = {
   withdrawalWindowOpen: true,
   withdrawalWindowOpenNow: false,
   withdrawalWindowNote: "Withdrawals open every month on the 4th.",
+  roiWithdrawPaused: false,
+  incomeWithdrawPaused: false,
 
   teamPreview: [
     { address: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0b", depth: 1, packageUsdt: 100 },

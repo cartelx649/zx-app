@@ -21,6 +21,8 @@ export const WITHDRAW_ERROR_MESSAGES: Record<string, string> = {
   NO_ROI_FOR_MONTH: "No ROI available for this month.",
   AMOUNT_EXCEEDS_ROI: "Amount exceeds your available ROI.",
   CAP_REACHED: "Income cap reached. Please re-topup.",
+  ROI_WITHDRAW_PAUSED: "ROI withdrawal is paused by admin.",
+  INCOME_WITHDRAW_PAUSED: "Income withdrawal is paused by admin.",
   DUPLICATE_REQUEST: "Request already in progress. Please wait.",
 };
 

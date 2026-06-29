@@ -53,6 +53,7 @@ export function WithdrawableIncomeCard() {
   const { token, isAuthenticated } = useAuth();
   const { data: dashboard, refetch: refetchDashboard } = useDashboard();
   const walletAddress = dashboard.walletAddress;
+  const incomePaused = dashboard.incomeWithdrawPaused;
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["withdrawable-income", MONTH, Boolean(token)],
@@ -73,7 +74,7 @@ export function WithdrawableIncomeCard() {
   });
 
   async function handleWithdraw(type: IncomeType, claimable: number) {
-    if (!token || !walletAddress || claimable <= 0) return;
+    if (!token || !walletAddress || claimable <= 0 || incomePaused) return;
     setStatus((s) => ({
       ...s,
       [type]: { state: "pending", error: null, txHash: null },
@@ -116,9 +117,11 @@ export function WithdrawableIncomeCard() {
                 type={type}
                 totals={data?.totals[type]}
                 status={status[type]}
+                paused={incomePaused}
                 disabled={
                   !token ||
                   !walletAddress ||
+                  incomePaused ||
                   status[type].state === "pending" ||
                   status[type].state === "done"
                 }
@@ -126,6 +129,12 @@ export function WithdrawableIncomeCard() {
               />
             ))}
           </div>
+
+          {incomePaused ? (
+            <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+              Direct aur override income withdrawals abhi admin ne pause kiye hue hain.
+            </div>
+          ) : null}
 
           <EntriesBreakdown entries={data?.entries ?? []} />
 
@@ -140,12 +149,14 @@ function TypeSummary({
   type,
   totals,
   status,
+  paused,
   disabled,
   onWithdraw,
 }: {
   type: IncomeType;
   totals?: WithdrawableTotals;
   status: WithdrawStatus;
+  paused: boolean;
   disabled: boolean;
   onWithdraw: (type: IncomeType, claimable: number) => void;
 }) {
@@ -168,7 +179,13 @@ function TypeSummary({
         className="mt-1 w-full"
         onClick={() => onWithdraw(type, claimable)}
         disabled={disabled || claimable <= 0}
-        title={claimable > 0 ? undefined : "Nothing to withdraw"}
+        title={
+          claimable <= 0
+            ? "Nothing to withdraw"
+            : paused
+              ? "Income withdrawal is paused by admin"
+              : undefined
+        }
       >
         {status.state === "pending"
           ? "Withdrawing…"
