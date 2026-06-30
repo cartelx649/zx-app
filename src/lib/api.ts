@@ -95,6 +95,7 @@ async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
   const init: RequestInit = {
     ...rest,
     signal: controller.signal,
+    cache: "no-store",
     headers: {
       ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
