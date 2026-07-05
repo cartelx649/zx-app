@@ -14,6 +14,7 @@ import {
   api,
   extractToken,
   type AdminConfigApi,
+  type AdminCurrentMonthIncomeApi,
   type AdminCycleProgressStatus,
   type AdminKpisApi,
 } from "@/lib/api";
@@ -142,6 +143,13 @@ export default function AdminPage() {
     staleTime: 30_000,
   });
 
+  const currentMonthIncomeQuery = useQuery({
+    queryKey: ["admin-current-month-income", Boolean(activeToken), activeToken],
+    enabled: adminEnabled,
+    queryFn: () => api.getAdminCurrentMonthIncome(activeToken!),
+    staleTime: 30_000,
+  });
+
   const cycleProgressQuery = useQuery({
     queryKey: ["admin-cycle-progress", Boolean(activeToken), activeToken],
     enabled: adminEnabled,
@@ -202,13 +210,20 @@ export default function AdminPage() {
     await configQuery.refetch();
   }
 
-  function adminStats(kpis: AdminKpisApi | undefined) {
+  function adminStats(
+    kpis: AdminKpisApi | undefined,
+    currentMonthIncome: AdminCurrentMonthIncomeApi | undefined,
+  ) {
+    const roiLabel = currentMonthIncome?.meta?.month
+      ? `ROI (${currentMonthIncome.meta.month})`
+      : "ROI (current month)";
     if (!kpis) {
       return [
         { label: "Total users", value: "—" },
         { label: "Active users", value: "—" },
         { label: "Inactive users", value: "—" },
         { label: "Total deposits", value: "—" },
+        { label: roiLabel, value: "—" },
         { label: "Total withdrawals", value: "—" },
         { label: "Total payouts", value: "—" },
         { label: "Re-top users", value: "—" },
@@ -219,13 +234,20 @@ export default function AdminPage() {
       { label: "Active users", value: formatNumber(kpis.activeUsers) },
       { label: "Inactive users", value: formatNumber(kpis.inactiveUsers) },
       { label: "Total deposits", value: formatUsdt(kpis.totalDeposits) },
+      {
+        label: roiLabel,
+        value: formatUsdt(currentMonthIncome?.systemTotals?.roi ?? 0),
+      },
       { label: "Total withdrawals", value: formatNumber(kpis.totalWithdrawals) },
       { label: "Total payouts", value: formatUsdt(kpis.totalPayouts) },
       { label: "Re-top users", value: formatNumber(kpis.reTopUsers) },
     ];
   }
 
-  const stats = useMemo(() => adminStats(kpisQuery.data), [kpisQuery.data]);
+  const stats = useMemo(
+    () => adminStats(kpisQuery.data, currentMonthIncomeQuery.data),
+    [currentMonthIncomeQuery.data, kpisQuery.data],
+  );
   const visibleCycleRows = useMemo(() => {
     const rows = cycleProgressQuery.data?.cycles ?? [];
     const search = cappingSearch.trim().toLowerCase();
@@ -313,6 +335,7 @@ export default function AdminPage() {
                 onClick={() => {
                   void kpisQuery.refetch();
                   void configQuery.refetch();
+                  void currentMonthIncomeQuery.refetch();
                   void cycleProgressQuery.refetch();
                 }}
               >

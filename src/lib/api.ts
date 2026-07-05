@@ -299,6 +299,20 @@ export type AdminKpisApi = {
   reTopUsers: number;
 };
 
+export type AdminCurrentMonthIncomeApi = {
+  meta: {
+    month: string;
+    source: string;
+    generatedAt: string;
+  };
+  systemTotals: {
+    roi: number;
+    direct: number;
+    level: number;
+    totalClaimable: number;
+  };
+};
+
 export type AdminRoiSlabApi = {
   name: string;
   min: number;
@@ -523,6 +537,9 @@ export const api = {
 
   getAdminKpis: (token: string) =>
     apiFetch<AdminKpisApi>("/admin/kpis", { token }),
+
+  getAdminCurrentMonthIncome: (token: string) =>
+    apiFetch<AdminCurrentMonthIncomeApi>("/admin/current-month-income", { token }),
 
   getAdminConfig: (token: string) =>
     apiFetch<AdminConfigApi>("/admin/config", { token }),
