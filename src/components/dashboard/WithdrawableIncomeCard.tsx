@@ -14,13 +14,11 @@ import {
   type WithdrawalRecord,
 } from "@/lib/api";
 import {
+  currentUtcMonthKey,
   formatUsdt,
   statusPillClass,
   withdrawErrorMessage,
 } from "@/lib/withdrawals";
-
-// Hardcoded for now — wire up to the active month once the backend supports it.
-const MONTH = "2026-05";
 
 type IncomeType = "direct" | "override";
 
@@ -52,13 +50,14 @@ function formatDate(iso: string | null) {
 export function WithdrawableIncomeCard() {
   const { token, isAuthenticated } = useAuth();
   const { data: dashboard, refetch: refetchDashboard } = useDashboard();
+  const monthKey = currentUtcMonthKey();
   const walletAddress = dashboard.walletAddress;
   const incomePaused = dashboard.incomeWithdrawPaused;
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["withdrawable-income", MONTH, Boolean(token)],
+    queryKey: ["withdrawable-income", monthKey, Boolean(token)],
     enabled: Boolean(isAuthenticated && token),
-    queryFn: () => api.getWithdrawableIncome(token!, MONTH),
+    queryFn: () => api.getWithdrawableIncome(token!, monthKey),
     staleTime: 30_000,
   });
 
@@ -81,9 +80,9 @@ export function WithdrawableIncomeCard() {
     }));
     try {
       const result = await api.withdrawContract(
-        { walletAddress, amount: claimable, type, monthKey: MONTH },
+        { walletAddress, amount: claimable, type, monthKey },
         token,
-        `${walletAddress}-${MONTH}-${type}`,
+        `${walletAddress}-${monthKey}-${type}`,
       );
       setStatus((s) => ({
         ...s,
@@ -101,7 +100,7 @@ export function WithdrawableIncomeCard() {
   return (
     <HudPanel
       title="Direct & override income"
-      subtitle={data?.monthKey ?? MONTH}
+      subtitle={data?.monthKey ?? monthKey}
       accent="cyan"
     >
       {errorMessage ? (

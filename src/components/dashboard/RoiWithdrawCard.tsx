@@ -7,10 +7,11 @@ import { HudPanel } from "@/components/hud/HudPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboard } from "@/hooks/useDashboard";
 import { ApiError, api, type WithdrawalContractApi } from "@/lib/api";
-import { formatUsdt, withdrawErrorMessage } from "@/lib/withdrawals";
-
-// Hardcoded for now — wire up to the active month once the backend supports it.
-const MONTH = "2026-05";
+import {
+  currentUtcMonthKey,
+  formatUsdt,
+  withdrawErrorMessage,
+} from "@/lib/withdrawals";
 
 // Admin fee deducted by the backend on payout. Shown here for transparency only;
 // the gross amount is still sent to the backend, which performs the deduction.
@@ -21,6 +22,7 @@ type WithdrawState = "idle" | "pending" | "done" | "error";
 export function RoiWithdrawCard() {
   const { token, isAuthenticated } = useAuth();
   const { data: dashboard, refetch: refetchDashboard } = useDashboard();
+  const monthKey = useMemo(() => currentUtcMonthKey(), []);
 
   const {
     data,
@@ -28,9 +30,9 @@ export function RoiWithdrawCard() {
     error,
     refetch: refetchRoi,
   } = useQuery({
-    queryKey: ["monthly-roi", MONTH, Boolean(token)],
+    queryKey: ["monthly-roi", monthKey, Boolean(token)],
     enabled: Boolean(isAuthenticated && token),
-    queryFn: () => api.getMonthlyRoi(token!, MONTH),
+    queryFn: () => api.getMonthlyRoi(token!, monthKey),
     staleTime: 30_000,
   });
 
@@ -55,8 +57,8 @@ export function RoiWithdrawCard() {
   // Stable per (wallet, month): retrying a failed attempt reuses the same key,
   // so a request that actually succeeded server-side can't double-pay.
   const idempotencyKey = useMemo(
-    () => `${walletAddress}-${MONTH}-roi`,
-    [walletAddress],
+    () => `${walletAddress}-${monthKey}-roi`,
+    [walletAddress, monthKey],
   );
 
   const canWithdraw =
@@ -75,7 +77,7 @@ export function RoiWithdrawCard() {
     setWithdrawError(null);
     try {
       const result = await api.withdrawContract(
-        { walletAddress, amount: totalRoi, type: "roi", monthKey: MONTH },
+        { walletAddress, amount: totalRoi, type: "roi", monthKey: monthKey },
         token,
         idempotencyKey,
       );
@@ -91,7 +93,7 @@ export function RoiWithdrawCard() {
   return (
     <HudPanel
       title="Monthly ROI"
-      subtitle={data?.monthKey ?? MONTH}
+      subtitle={data?.monthKey ?? monthKey}
       accent="purple"
     >
       {errorMessage ? (

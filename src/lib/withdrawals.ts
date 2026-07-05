@@ -43,3 +43,8 @@ export function withdrawErrorMessage(e: unknown): string {
 export function formatUsdt(amount: number) {
   return amount.toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
+
+/** Matches backend month keys, which are stored in UTC as YYYY-MM. */
+export function currentUtcMonthKey(date = new Date()) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
