@@ -29,6 +29,12 @@ function formatUsdt(value: number) {
   return `${formatNumber(value)} USDT`;
 }
 
+function formatUsdtPrecise(value: number) {
+  return `${new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 8,
+  }).format(value)} USDT`;
+}
+
 function formatPercent(value: number) {
   return `${value.toFixed(2)}%`;
 }
@@ -224,6 +230,9 @@ export default function AdminPage() {
         { label: "Inactive users", value: "—" },
         { label: "Total deposits", value: "—" },
         { label: roiLabel, value: "—" },
+        { label: "Direct income (current month)", value: "—" },
+        { label: "Level income (current month)", value: "—" },
+        { label: "Income claimable (current month)", value: "—" },
         { label: "Total withdrawals", value: "—" },
         { label: "Total payouts", value: "—" },
         { label: "Re-top users", value: "—" },
@@ -236,7 +245,35 @@ export default function AdminPage() {
       { label: "Total deposits", value: formatUsdt(kpis.totalDeposits) },
       {
         label: roiLabel,
-        value: formatUsdt(currentMonthIncome?.systemTotals?.roi ?? 0),
+        value:
+          currentMonthIncome?.roi != null
+            ? formatUsdtPrecise(currentMonthIncome.roi.gross)
+            : "—",
+      },
+      {
+        label: "Direct income (current month)",
+        value:
+          currentMonthIncome?.income != null
+            ? formatUsdtPrecise(currentMonthIncome.income.directGross)
+            : "—",
+      },
+      {
+        label: "Level income (current month)",
+        value:
+          currentMonthIncome?.income != null
+            ? formatUsdtPrecise(currentMonthIncome.income.levelGross)
+            : "—",
+      },
+      {
+        label: "Income claimable (current month)",
+        value:
+          currentMonthIncome?.income != null
+            ? formatUsdtPrecise(currentMonthIncome.income.claimable)
+            : "—",
+        hint:
+          currentMonthIncome?.income != null
+            ? `Gross ${formatUsdtPrecise(currentMonthIncome.income.gross)} − withdrawn ${formatUsdtPrecise(currentMonthIncome.income.withdrawn)}`
+            : undefined,
       },
       { label: "Total withdrawals", value: formatNumber(kpis.totalWithdrawals) },
       { label: "Total payouts", value: formatUsdt(kpis.totalPayouts) },
@@ -447,7 +484,12 @@ export default function AdminPage() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat) => (
-                  <HudStat key={stat.label} label={stat.label} value={stat.value} />
+                  <HudStat
+                    key={stat.label}
+                    label={stat.label}
+                    value={stat.value}
+                    hint={stat.hint}
+                  />
                 ))}
               </div>
             )}

@@ -305,11 +305,19 @@ export type AdminCurrentMonthIncomeApi = {
     source: string;
     generatedAt: string;
   };
-  systemTotals: {
-    roi: number;
-    direct: number;
-    level: number;
-    totalClaimable: number;
+  roi: {
+    gross: number;
+  };
+  income: {
+    directGross: number;
+    directWithdrawn: number;
+    directClaimable: number;
+    levelGross: number;
+    levelWithdrawn: number;
+    levelClaimable: number;
+    gross: number;
+    withdrawn: number;
+    claimable: number;
   };
 };
 
