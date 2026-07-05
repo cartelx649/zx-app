@@ -120,10 +120,10 @@ export function RoiWithdrawCard() {
               disabled={!canWithdraw}
               title={
                 roiPaused
-                  ? "ROI withdrawal is paused by admin"
-                  : totalRoi > 0
-                    ? undefined
-                    : "No ROI available to withdraw"
+                ? "ROI withdrawal is paused by admin"
+                : totalRoi > 0
+                  ? undefined
+                  : "No ROI available to withdraw"
               }
             >
               {withdrawState === "pending" ? "Withdrawing…" : "Withdraw"}
@@ -131,8 +131,8 @@ export function RoiWithdrawCard() {
           </div>
 
           {roiPaused ? (
-            <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-              ROI withdrawal abhi admin ne pause ki hui hai. Resume hote hi aap phir withdraw kar paoge.
+          <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+            ROI withdrawal abhi admin ne pause ki hui hai. Resume hote hi aap phir withdraw kar paoge.
             </div>
           ) : null}
 
