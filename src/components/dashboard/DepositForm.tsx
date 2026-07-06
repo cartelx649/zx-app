@@ -193,6 +193,93 @@ export function DepositForm() {
     }
   };
 
+  const renderDepositActions = (compact = false) => {
+    if (!depositEnv) {
+      return (
+        <p className="text-sm text-white/65">
+          Set{" "}
+          <code className="text-purple-300">NEXT_PUBLIC_DEPOSIT_CONTRACT</code>{" "}
+          in <code className="text-purple-300">.env.local</code> to enable
+          on-chain actions.
+        </p>
+      );
+    }
+    if (!depositAddress) {
+      return (
+        <p className="text-sm text-red-300">
+          <code className="text-purple-300">NEXT_PUBLIC_DEPOSIT_CONTRACT</code>{" "}
+          is not a valid address.
+        </p>
+      );
+    }
+    if (!isConnected) {
+      return <p className="text-sm text-white/65">Connect your wallet to deposit.</p>;
+    }
+    if (!d.isCorrectChain) {
+      return (
+        <HudButton
+          variant="danger"
+          className={compact ? "w-full" : ""}
+          disabled={isSwitching}
+          onClick={() => switchChain({ chainId: bsc.id })}
+        >
+          {isSwitching ? "Switching…" : "Switch to BSC"}
+        </HudButton>
+      );
+    }
+
+    return (
+      <>
+        <div className={`flex gap-2 ${compact ? "flex-col" : "flex-wrap"}`}>
+          <HudButton
+            className={compact ? "w-full" : ""}
+            disabled={d.approveDisabled}
+            onClick={() => void handleApprove()}
+          >
+            {d.isBusy && lastAction === "approve"
+              ? d.statusText || "Approving…"
+              : d.hasEnoughAllowance
+                ? "Approved"
+                : "Approve USDT"}
+          </HudButton>
+          <HudButton
+            className={compact ? "w-full" : ""}
+            disabled={d.depositDisabled}
+            onClick={() => void handleDeposit()}
+          >
+            {d.isBusy && lastAction === "deposit"
+              ? d.statusText || "Depositing…"
+              : `Deposit ${amountUsdt ?? 0} USDT`}
+          </HudButton>
+        </div>
+
+        {!d.hasEnoughBalance && amountUsdt != null ? (
+          <p className="mt-3 text-xs text-amber-300">
+            Insufficient USDT balance for this amount.
+          </p>
+        ) : null}
+
+        {d.error ? (
+          <p className="mt-3 text-xs text-red-300">{d.error}</p>
+        ) : null}
+
+        {success && verifyState === "pending" ? (
+          <p className="mt-3 text-xs text-white/65">
+            On-chain deposit confirmed — verifying with backend…
+          </p>
+        ) : null}
+        {verifyState === "done" ? (
+          <p className="mt-3 text-xs text-emerald-300">
+            Deposit verified. Your dashboard will refresh shortly.
+          </p>
+        ) : null}
+        {verifyState === "error" && verifyError ? (
+          <p className="mt-3 text-xs text-red-300">{verifyError}</p>
+        ) : null}
+      </>
+    );
+  };
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 pb-24">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -352,78 +439,7 @@ export function DepositForm() {
       </HudPanel>
 
       <HudPanel title="Confirm deposit" subtitle="Approve, then deposit">
-        {!depositEnv ? (
-          <p className="text-sm text-white/65">
-            Set{" "}
-            <code className="text-purple-300">NEXT_PUBLIC_DEPOSIT_CONTRACT</code>{" "}
-            in <code className="text-purple-300">.env.local</code> to enable
-            on-chain actions.
-          </p>
-        ) : !depositAddress ? (
-          <p className="text-sm text-red-300">
-            <code className="text-purple-300">
-              NEXT_PUBLIC_DEPOSIT_CONTRACT
-            </code>{" "}
-            is not a valid address.
-          </p>
-        ) : !isConnected ? (
-          <p className="text-sm text-white/65">Connect your wallet to deposit.</p>
-        ) : !d.isCorrectChain ? (
-          <HudButton
-            variant="danger"
-            disabled={isSwitching}
-            onClick={() => switchChain({ chainId: bsc.id })}
-          >
-            {isSwitching ? "Switching…" : "Switch to BSC"}
-          </HudButton>
-        ) : (
-          <>
-            <div className="flex flex-wrap gap-2">
-              <HudButton
-                disabled={d.approveDisabled}
-                onClick={() => void handleApprove()}
-              >
-                {d.isBusy && lastAction === "approve"
-                  ? d.statusText || "Approving…"
-                  : d.hasEnoughAllowance
-                    ? "Approved"
-                    : "Approve USDT"}
-              </HudButton>
-              <HudButton
-                disabled={d.depositDisabled}
-                onClick={() => void handleDeposit()}
-              >
-                {d.isBusy && lastAction === "deposit"
-                  ? d.statusText || "Depositing…"
-                  : `Deposit ${amountUsdt ?? 0} USDT`}
-              </HudButton>
-            </div>
-
-            {!d.hasEnoughBalance && amountUsdt != null ? (
-              <p className="mt-3 text-xs text-amber-300">
-                Insufficient USDT balance for this amount.
-              </p>
-            ) : null}
-
-            {d.error ? (
-              <p className="mt-3 text-xs text-red-300">{d.error}</p>
-            ) : null}
-
-            {success && verifyState === "pending" ? (
-              <p className="mt-3 text-xs text-white/65">
-                On-chain deposit confirmed — verifying with backend…
-              </p>
-            ) : null}
-            {verifyState === "done" ? (
-              <p className="mt-3 text-xs text-emerald-300">
-                Deposit verified. Your dashboard will refresh shortly.
-              </p>
-            ) : null}
-            {verifyState === "error" && verifyError ? (
-              <p className="mt-3 text-xs text-red-300">{verifyError}</p>
-            ) : null}
-          </>
-        )}
+        {renderDepositActions()}
       </HudPanel>
 
       <HudPanel
@@ -452,6 +468,17 @@ export function DepositForm() {
           </div>
         </dl>
       </HudPanel>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b0b14]/95 px-4 py-3 shadow-[0_-16px_40px_-24px_rgba(168,85,247,0.55)] backdrop-blur md:hidden">
+        <div className="mx-auto max-w-3xl">
+          <p className="mb-2 text-xs text-white/55">
+            {amountUsdt != null
+              ? `Ready for ${amountUsdt} USDT deposit`
+              : "Enter an amount to deposit"}
+          </p>
+          {renderDepositActions(true)}
+        </div>
+      </div>
     </div>
   );
 }
