@@ -132,7 +132,7 @@ export function RoiWithdrawCard() {
 
           {roiPaused ? (
           <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-            ROI withdrawal abhi admin ne pause ki hui hai. Resume hote hi aap phir withdraw kar paoge.
+            ROI withdrawals are currently paused by the admin. You will be able to withdraw again once they are resumed.
             </div>
           ) : null}
 

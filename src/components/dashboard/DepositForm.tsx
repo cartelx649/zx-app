@@ -43,7 +43,7 @@ const TIERS: Tier[] = [
     min: 5001,
     max: Number.POSITIVE_INFINITY,
     rate: "8% / Month",
-    suggested: 5000,
+    suggested: 5001,
   },
 ];
 
