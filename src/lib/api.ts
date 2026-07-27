@@ -218,6 +218,9 @@ export type MonthlyRoiApi = {
   monthKey: string;
   totalRoi: number;
   count: number;
+  creditedDays: number;
+  daysInMonth: number;
+  remainingDays: number;
 };
 
 export type WithdrawableTotals = {

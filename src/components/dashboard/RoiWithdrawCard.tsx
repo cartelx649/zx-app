@@ -110,7 +110,7 @@ export function RoiWithdrawCard() {
                 {formatUsdt(totalRoi)} USDT
               </p>
               <p className="text-sm text-white/55">
-                Daily ROI credited from the 1st through today
+                Days 1–{data?.creditedDays ?? 0} credited
               </p>
             </div>
             <HudButton
@@ -128,6 +128,15 @@ export function RoiWithdrawCard() {
               {withdrawState === "pending" ? "Withdrawing…" : "Withdraw"}
             </HudButton>
           </div>
+
+          {data ? (
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm">
+              <span className="text-white/55">Month progress</span>
+              <span className="font-mono text-white/85">
+                {data.creditedDays}/{data.daysInMonth} days · {data.remainingDays} remaining
+              </span>
+            </div>
+          ) : null}
 
           {roiPaused ? (
           <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
