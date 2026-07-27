@@ -43,8 +43,6 @@ export function RoiWithdrawCard() {
     : null;
 
   const totalRoi = data?.totalRoi ?? 0;
-  const projectedRoi = data?.projectedRoi ?? null;
-  const count = data?.count ?? 0;
   const adminFee = totalRoi * ADMIN_FEE_RATE;
   const netRoi = totalRoi - adminFee;
   const walletAddress = dashboard.walletAddress;
@@ -106,15 +104,13 @@ export function RoiWithdrawCard() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-col gap-1">
               <p className="text-xs uppercase tracking-wider text-white/45">
-                {projectedRoi === null ? "Total ROI" : "Projected monthly ROI"}
+                Accrued ROI this month
               </p>
               <p className="font-mono text-2xl font-semibold text-amber-300">
-                {formatUsdt(projectedRoi ?? totalRoi)} USDT
+                {formatUsdt(totalRoi)} USDT
               </p>
               <p className="text-sm text-white/55">
-                {projectedRoi === null
-                  ? `from ${count} ${count === 1 ? "entry" : "entries"}`
-                  : "Full-month estimate from verified deposits"}
+                Daily ROI credited from the 1st through today
               </p>
             </div>
             <HudButton
@@ -132,15 +128,6 @@ export function RoiWithdrawCard() {
               {withdrawState === "pending" ? "Withdrawing…" : "Withdraw"}
             </HudButton>
           </div>
-
-          {projectedRoi !== null ? (
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm">
-              <span className="text-white/55">Credited / withdrawable ROI</span>
-              <span className="font-mono text-white/85">
-                {formatUsdt(totalRoi)} USDT
-              </span>
-            </div>
-          ) : null}
 
           {roiPaused ? (
           <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
